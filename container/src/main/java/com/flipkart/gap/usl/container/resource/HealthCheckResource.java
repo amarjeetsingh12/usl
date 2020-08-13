@@ -16,7 +16,7 @@ import javax.ws.rs.core.Response;
 @Produces({MediaType.APPLICATION_JSON, MediaType.TEXT_HTML, MediaType.TEXT_PLAIN})
 public class HealthCheckResource {
     private static boolean rotation = true;
-    private String secretKey = "12390almlc1290";
+    private String secretKey = "";
 
     @GET
     @Path("/{status: status|elb-healthcheck}")
