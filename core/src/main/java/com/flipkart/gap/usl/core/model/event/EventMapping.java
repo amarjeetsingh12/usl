@@ -29,10 +29,7 @@ public class EventMapping {
     private JsonNode mapping;
     // optional validations ,send event only if these validations are passed.
     private JsonNode validations;
-    /*
-        EntityId : First should be primary id and consecutive for the fallback, like if accountId is not there, update with deviceId.
-        accepts path of the entityId like <"/core/visit/accountId","/core/visit/device/deviceId">
-     */
+
     @NotNull
     private List<String> entityIdPaths;
     @NotNull
