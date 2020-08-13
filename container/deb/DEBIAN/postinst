@@ -1,0 +1,43 @@
+#! /bin/bash -ex
+
+APP_PCKG=usl
+PAC=usl-container
+PAC_UID=<your-uid>
+PAC_GID=<your-gid>
+PAC_GROUP="<your-group>"
+PAC_USER="<your-user>"
+
+if [ "${1}" == "configure" ] ; then
+
+    #creating user if it doesnt exist
+    if ! getent group fk-gap > /dev/null; then
+    	groupadd -g "$PAC_GID" fk-gap
+    fi
+
+    if ! getent passwd $PAC_UID > /dev/null; then
+        adduser --system --uid $PAC_UID --home /usr/share/$PAC --no-create-home \
+        --ingroup fk-gap --disabled-password --shell /bin/false \
+        $PAC_USER
+    fi
+
+    echo "Setting Up required Directories & Permissions"
+    sudo mkdir -p /var/log/${PAC}
+    sudo mkdir -p /usr/share/${PAC}
+    sudo mkdir -p /etc/${PAC}
+    sudo mkdir -p /etc/${APP_PCKG}
+    sudo mkdir -p /var/run/${PAC}
+    sudo chown -R ${PAC_UID}:${PAC_GID} /etc/${PAC}
+    sudo chown -R ${PAC_UID}:${PAC_GID} /etc/${APP_PCKG}
+    sudo chown -R ${PAC_UID}:${PAC_GID} /var/log/${PAC}
+    sudo chmod -R 777 /var/log/${PAC}
+    sudo chmod -R 777 /usr/share/${PAC}
+    sudo chmod -R 777 /usr/lib/${PAC}
+    sudo chmod -R 777 /var/run/${PAC}
+    sudo chmod -R 777 /usr/share/${PAC}/check_container_log_growth.sh
+    sudo chmod -R 777 /usr/share/${PAC}/health_check.sh
+    chmod 777 /etc/init.d/$PAC
+
+
+    // your code to prep. service goes here
+    // your alerting/monitoring scripts prep. goes here
+fi

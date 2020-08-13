@@ -1,0 +1,35 @@
+mongoConfig:
+  path: console/src/main/resources/config.json
+  namespace: prod
+cacheConfig:
+  ttlInMinutes: 24
+swagger:
+  resourcePackage: com.flipkart.gap.usl.resources
+  title: Sample API
+  version: v1
+  description: Sample service API
+  license: Apache 2.0
+  licenseUrl: https://www.apache.org/licenses/LICENSE-2.0
+server:
+  gzip:
+    bufferSize: 80KiB
+    enabled: true
+    minimumEntitySize: 256 bytes
+  applicationConnectors:
+    - type: http
+      port: 9999
+  adminConnectors:
+    - type: http
+      port: 9990
+  requestLog:
+        appenders:
+          - type: file
+            currentLogFilename: /var/log/usl-container/access.log
+            threshold: ALL
+            archive: true
+            archivedLogFilenamePattern: /var/log/usl-container/access.%d.log.gz
+            archivedFileCount: 7
+          - type: console
+            threshold: ALL
+            timeZone: UTC
+            target: stdout

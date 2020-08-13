@@ -1,0 +1,24 @@
+{
+  "commands": [
+    {
+      "poolName": "mongo-usl",
+      "protocolConf": {
+        "name": "mongo-usl",
+        "protocol": "mongo",
+        "hosts": "localhost",
+        "connectTimeoutInMilliSeconds": 10000,
+        "maxConnectionsPerHost": 100,
+        "maxWaitTimeInMilliSeconds": 10000,
+        "socketTimeoutInMilliSeconds": 0
+      },
+      "commandConf": {
+        "isolation": "THREAD"
+      }
+    }
+  ],
+  "cache": {
+    "maxSize": 200,
+    "ttl": 2
+  },
+  "port": 9925
+}
