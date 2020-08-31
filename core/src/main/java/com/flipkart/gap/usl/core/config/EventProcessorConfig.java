@@ -29,8 +29,6 @@ public class EventProcessorConfig implements Serializable {
     @NotBlank
     private String kafkaBrokerConnection;
     @NotBlank
-    private String checkpointDirectory;
-    @NotBlank
     private String zkHosts;
     @NotBlank
     private int zkPort = 2181;

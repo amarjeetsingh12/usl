@@ -7,7 +7,7 @@ import com.flipkart.gap.usl.container.exceptions.ServingLayerException;
 import com.flipkart.gap.usl.core.model.dimension.Dimension;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 
 import java.util.Collection;
 import java.util.List;
@@ -32,10 +32,10 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * Created by ankesh.maheshwari on 28/11/16.
  */
-
+// HTTP GET: host:port/entity/user.payments/{entityId}
 @Slf4j
-@Path("/gamificationAndPersonalisation")
-@Api("/gamificationAndPersonalisation")
+@Path("/entity")
+@Api("/entity")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class RetrievalResource {
@@ -45,7 +45,7 @@ public class RetrievalResource {
 
     @GET
     @Timed
-    @Path("/entity/{entityId}/dimensionName/{dimensionName}")
+    @Path("/{entityId}/dimension/{dimensionName}")
     @ApiOperation("To fetch the response of the Dimension")
     @ApiResponses(value = {@ApiResponse(code = HttpStatus.SC_NO_CONTENT, message = "Dimension not exists for the given entity")})
     public Response getDimensionForEntity(@NotNull @PathParam("entityId") String entityId,
@@ -61,7 +61,7 @@ public class RetrievalResource {
 
     @POST
     @Timed
-    @Path("/entity/{entityId}/dimensions")
+    @Path("/{entityId}/dimensions")
     @ApiOperation("To fetch the response of the Dimension list")
     @ApiResponses(value = {@ApiResponse(code = HttpStatus.SC_NO_CONTENT, message = "Dimension not exists for the given entity")})
     public Response getDimensionList(@NotNull @PathParam("entityId") String entityId,

@@ -40,7 +40,7 @@ public class UpdateEventProcessorTest {
     @Before
     public void setup() {
         MockitoAnnotations.initMocks(this);
-        JmxReporterMetricRegistry.initialiseJmxMetricRegistry("flipkart");
+        JmxReporterMetricRegistry.initialiseJmxMetricRegistry();
     }
 
     @Test

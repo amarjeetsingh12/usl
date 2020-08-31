@@ -23,6 +23,14 @@ src_managed/
 project/boot/
 project/plugins/project/
 container/dependency-reduced-pom.xml
+container/.flattened-pom.xml
 core/dependency-reduced-pom.xml
-uslapp/dependency-reduced-pom.xml
-console/dependency-reduced-pom.xml
+core/.flattened-pom.xml
+sample-container/dependency-reduced-pom.xml
+sample-container/.flattened-pom.xml
+sample-processor/dependency-reduced-pom.xml
+sample-processor/.flattened-pom.xml
+usl-client/dependency-reduced-pom.xml
+usl-client/.flattened-pom.xml
+./dependency-reduced-pom.xml
+.flattened-pom.xml

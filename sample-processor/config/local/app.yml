@@ -1,0 +1,17 @@
+coreConfig:
+  eventProcessorConfig:
+    sparkMasterWithPort: local[2]
+    topicName: local-usl
+    kafkaBrokerConnection: localhost:9092
+    zkHosts: localhost
+    zkPort: 2182
+  dimensionPackage: com.flipkart.usl.processor.sample
+  mongoConfig:
+    connectionString: localhost:27017
+    dbName: local-usl
+  hbaseConfig:
+    tableName: local-usl
+    zookeeperQuorum: localhost:2181
+    parentNode: /hbase
+  cacheConfig:
+    ttlInMinutes: 30

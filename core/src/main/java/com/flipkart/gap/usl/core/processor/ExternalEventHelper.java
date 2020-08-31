@@ -41,7 +41,7 @@ public class ExternalEventHelper {
         if (StringUtils.isBlank(externalEvent.getName())) {
             log.error("EventId missing from external Event");
             JmxReporterMetricRegistry.getInstance().markMeter(Constants.Metrics.EXTERNAL_EVENT_MISSING_NAME);
-            return Collections.<Tuple2<EntityDimensionCompositeKey, InternalEventMeta>>emptyList().iterator();
+            return Collections.emptyIterator();
         }
         return findInternalEventsForExternalEvent(externalEvent).iterator();
     }

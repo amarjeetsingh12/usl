@@ -1,5 +1,11 @@
 package com.flipkart.gap.usl.core.config;
 
+import com.flipkart.gap.usl.core.store.dimension.DimensionStoreDAO;
+import com.flipkart.gap.usl.core.store.dimension.hbase.HBaseDimensionStoreDAO;
+import com.flipkart.gap.usl.core.store.event.EventMappingStore;
+import com.flipkart.gap.usl.core.store.event.EventTypeStore;
+import com.flipkart.gap.usl.core.store.event.mongo.MongoEventMappingStore;
+import com.flipkart.gap.usl.core.store.event.mongo.MongoEventStore;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -16,32 +22,30 @@ import com.flipkart.gap.usl.core.processor.impl.SyncEventProcessorImpl;
 public class ConfigurationModule extends AbstractModule {
     private ApplicationConfiguration configuration;
     private static Injector injector;
-    private static String clientId;
-    private static String env;
 
-    public static synchronized Injector getInjector(String client, String env) {
+    public static synchronized Injector getInjector(ApplicationConfiguration configuration) {
         if (injector == null) {
-            injector = Guice.createInjector(new ConfigurationModule(ConfigHelper.getConfiguration(), client, env));
+            injector = Guice.createInjector(new ConfigurationModule(configuration));
         }
         return injector;
     }
 
-    public ConfigurationModule(ApplicationConfiguration configuration, String client, String environment) {
-        clientId = client;
-        env = environment;
+    public ConfigurationModule(ApplicationConfiguration configuration) {
         this.configuration = configuration;
     }
 
+
     @Override
     protected void configure() {
-        bind(ZKConfig.class).annotatedWith(Names.named("zkConfig")).toInstance(configuration.getZkConfig());
+        bind(MongoConfig.class).annotatedWith(Names.named("event.mongoConfig")).toInstance(configuration.getMongoConfig());
+        bind(EventMappingStore.class).to(MongoEventMappingStore.class);
+        bind(EventTypeStore.class).to(MongoEventStore.class);
+        bind(HbaseConfig.class).annotatedWith(Names.named("hbaseConfig")).toInstance(configuration.getHbaseConfig());
+        bind(DimensionStoreDAO.class).to(HBaseDimensionStoreDAO.class);
         bind(CacheConfig.class).annotatedWith(Names.named("cacheConfig")).toInstance(configuration.getCacheConfig());
         bind(EventProcessorConfig.class).annotatedWith(Names.named("eventProcessorConfig")).toInstance(configuration.getEventProcessorConfig());
+        bind(ApplicationConfiguration.class).toInstance(configuration);
         bind(String.class).annotatedWith(Names.named("dimensionPackage")).toInstance(configuration.getDimensionPackage());
-        bind(String.class).annotatedWith(Names.named("clientId")).toInstance(clientId);
-        bind(String.class).annotatedWith(Names.named("env")).toInstance(env);
         bind(SyncEventProcessor.class).to(SyncEventProcessorImpl.class);
-
-        // Add mappings to your DAO Impls and DB Configs.
     }
 }

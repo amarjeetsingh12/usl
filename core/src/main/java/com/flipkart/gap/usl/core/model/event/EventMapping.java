@@ -34,6 +34,8 @@ public class EventMapping {
     private List<String> entityIdPaths;
     @NotNull
     private boolean active = true;
+    private long created;
+    private long updated;
 
     public EventMapping(String sourceEventId, String eventType, JsonNode mapping, List<String> entityIdPaths, boolean active) {
         this.sourceEventId = sourceEventId;

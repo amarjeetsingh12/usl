@@ -8,4 +8,8 @@ public class DimensionPersistException extends Exception {
     public DimensionPersistException(Throwable cause) {
         super(cause);
     }
+
+    public DimensionPersistException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

@@ -25,8 +25,6 @@ public class ExternalEvent {
     @NotNull
     private JsonNode validations;
     @NotNull
-    private Source source;
-    @NotNull
     private String pivotPath;
     @NotNull
     private boolean active = true;

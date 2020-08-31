@@ -15,7 +15,7 @@ import javax.ws.rs.core.Response;
  */
 
 @Slf4j
-@Path("/usl")
+@Path("/ingestion")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class EventIngestorResource {
@@ -24,7 +24,7 @@ public class EventIngestorResource {
 
     @POST
     @Timed
-    @Path("/eventIngestor/{eventName}")
+    @Path("/{eventName}")
     public Response ingestEvent(@NotNull @PathParam("eventName") String eventName,
                                 @NotNull ObjectNode payload) {
         EventIngestorResponse response = eventIngestorService.ingest(payload, eventName, IngestionType.Async);
@@ -40,7 +40,7 @@ public class EventIngestorResource {
      */
     @POST
     @Timed
-    @Path("/eventIngestor/sync/{eventName}")
+    @Path("/sync/{eventName}")
     public Response ingestEventSync(@NotNull @PathParam("eventName") String eventName,
                                 @NotNull ObjectNode payload) {
         EventIngestorResponse response = eventIngestorService.ingest(payload, eventName, IngestionType.Sync);

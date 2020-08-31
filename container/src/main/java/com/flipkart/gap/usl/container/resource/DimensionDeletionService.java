@@ -24,15 +24,13 @@ public class DimensionDeletionService {
     DimensionStoreDAO dimensionStoreDAO;
     DimensionRegistry dimensionRegistry;
 
-    static String HBASE_POOL_NAME = "<your-pool-name>";
-
     public void deleteEntity(String entityId, String dimensionName) throws DimensionDeleteException {
         try {
             Optional<Dimension> dimension = retrievalService.getDimensionForEntity(dimensionName, entityId);
             if (dimension.isPresent()) {
                 Class<? extends Dimension> dimensionClass = dimensionRegistry.getDimensionClass(dimensionName);
                 DimensionDBRequest dimensionDBRequest = new DimensionDBRequest(dimensionClass, entityId, Constants.DIMENSION_VERSION);
-                dimensionStoreDAO.deleteDimension(dimensionDBRequest, HBASE_POOL_NAME);
+                dimensionStoreDAO.deleteDimension(dimensionDBRequest);
             } else {
                 throw new DimensionDeleteException(404, "Dimension not found");
             }

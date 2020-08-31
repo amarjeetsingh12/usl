@@ -3,27 +3,26 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.flipkart.gap.usl</groupId>
+    <groupId>com.flipkart.usl</groupId>
     <artifactId>usl</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>${revision}</version>
     <packaging>pom</packaging>
     <modules>
         <module>core</module>
-        <module>console</module>
-        <module>uslapp</module>
-        <module>container</module>
         <module>usl-client</module>
+        <module>container</module>
+        <module>sample-processor</module>
+        <module>sample-container</module>
     </modules>
 
     <properties>
+        <revision>0.0.1-SNAPSHOT</revision>
         <powermock.version>1.6.6</powermock.version>
-        <usl.version>1.0-SNAPSHOT</usl.version>
-        <core.version>1.0-SNAPSHOT</core.version>
-        <container.version>1.0-SNAPSHOT</container.version>
-        <console.version>1.0-SNAPSHOT</console.version>
-        <uslapp.version>1.0-SNAPSHOT</uslapp.version>
+        <guice.version>3.0</guice.version>
         <jacoco.version>0.7.1.201405082137</jacoco.version>
-        <sonar.coverage.exclusions>**/container/**,**/bootstrap/**,**/badgeservice/resources/**,**/badgeservice/storm/**,**/badgeservice/commons/**,**/badgeservice/filters/**,**/core/request/**,**/core/processors/**,**/core/di/**,**/core/services/hyperion/**</sonar.coverage.exclusions>
+        <sonar.coverage.exclusions>
+            **/container/**,**/bootstrap/**,**/badgeservice/resources/**,**/badgeservice/storm/**,**/badgeservice/commons/**,**/badgeservice/filters/**,**/core/request/**,**/core/processors/**,**/core/di/**,**/core/services/hyperion/**
+        </sonar.coverage.exclusions>
     </properties>
     <dependencies>
         <dependency>
@@ -31,6 +30,12 @@
             <artifactId>jacoco-maven-plugin</artifactId>
             <version>${jacoco.version}</version>
             <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.inject</groupId>
+            <artifactId>guice</artifactId>
+            <version>${guice.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -52,30 +57,6 @@
         </dependency>
 
     </dependencies>
-    <repositories>
-        <repository>
-            <id>fk-art-snapshot</id>
-            <name>Flipkart-Artifactory</name>
-            <url>http://artifactory.fkinternal.com/artifactory/v1.0/artifacts/libs-snapshots-local</url>
-        </repository>
-        <repository>
-            <id>fk-art-release</id>
-            <name>Flipkart-Artifactory</name>
-            <url>http://artifactory.fkinternal.com/artifactory/v1.0/artifacts/libs-release-local</url>
-        </repository>
-    </repositories>
-    <distributionManagement>
-        <snapshotRepository>
-            <id>fk-art-snapshot</id>
-            <name>libs-snapshot</name>
-            <url>http://artifactory.fkinternal.com/artifactory/v1.0/artifacts/libs-snapshots-local</url>
-        </snapshotRepository>
-        <repository>
-            <id>fk-art-release</id>
-            <name>libs-rel</name>
-            <url>http://artifactory.fkinternal.com/artifactory/v1.0/artifacts/libs-release-local</url>
-        </repository>
-    </distributionManagement>
     <build>
         <plugins>
             <plugin>
@@ -156,6 +137,31 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+                <version>1.0.0</version>
+                <configuration>
+                    <updatePomFile>true</updatePomFile>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>flatten</id>
+                        <phase>process-resources</phase>
+                        <goals>
+                            <goal>flatten</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>flatten.clean</id>
+                        <phase>clean</phase>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
         </plugins>
     </build>
 </project>

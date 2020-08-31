@@ -5,8 +5,9 @@ import com.flipkart.gap.usl.core.client.KafkaClient;
 import com.flipkart.gap.usl.core.client.OffsetManager;
 import com.flipkart.gap.usl.core.config.ConfigurationModule;
 import com.flipkart.gap.usl.core.config.EventProcessorConfig;
+import com.flipkart.gap.usl.core.config.v2.ApplicationConfiguration;
 import com.flipkart.gap.usl.core.constant.Constants;
-import com.flipkart.gap.usl.core.helper.Helper;
+import com.flipkart.gap.usl.core.helper.SparkHelper;
 import com.flipkart.gap.usl.core.metric.JmxReporterMetricRegistry;
 import com.flipkart.gap.usl.core.model.EntityDimensionCompositeKey;
 import com.flipkart.gap.usl.core.model.InternalEventMeta;
@@ -41,9 +42,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
-import static com.flipkart.gap.usl.core.constant.Constants.CLIENT_NAME_PROPERTY_IDENTIFIER;
-import static com.flipkart.gap.usl.core.constant.Constants.ENVIRONMENT_NAME_PROPERTY_IDENTIFIER;
-
 /**
  * Created by amarjeet.singh on 18/10/16.
  */
@@ -51,32 +49,20 @@ import static com.flipkart.gap.usl.core.constant.Constants.ENVIRONMENT_NAME_PROP
 @Singleton
 public class EventStreamProcessor implements Serializable {
     @Inject
-    @Named("eventProcessorConfig")
-    private EventProcessorConfig eventProcessorConfig;
+    private ApplicationConfiguration applicationConfiguration;
     @Inject
-    private OffsetManager offsetManager;
+    private transient OffsetManager offsetManager;
     @Inject
-    private KafkaClient kafkaClient;
-
-    @Inject
-    private ConfigurationModule configurationModule;
-
-    private SparkConf sparkConf;
-    private HashMap<String, Object> kafkaParams;
+    private transient KafkaClient kafkaClient;
+    private transient SparkConf sparkConf;
+    private transient HashMap<String, Object> kafkaParams;
     private transient JavaStreamingContext javaStreamingContext;
-
-    @Inject
-    @Named("clientId")
-    private String clientId;
-
-    @Inject
-    @Named("env")
-    private String env;
 
     @Inject
     public void init() {
         log.info("Initialising configs");
-        sparkConf = new SparkConf().setMaster(eventProcessorConfig.getSparkMasterWithPort()).setAppName(String.format("%s-%s-%s", eventProcessorConfig.getEnvironment(), Constants.Stream.GROUP_ID, clientId));
+        EventProcessorConfig eventProcessorConfig = applicationConfiguration.getEventProcessorConfig();
+        sparkConf = new SparkConf().setMaster(eventProcessorConfig.getSparkMasterWithPort()).setAppName(Constants.Stream.GROUP_ID);
         sparkConf.set("spark.streaming.backpressure.initialRate", "20000");
         sparkConf.set("spark.dynamicAllocation.enabled", "false");
         sparkConf.set("spark.streaming.receiver.maxRate", eventProcessorConfig.getBatchSize() + "");
@@ -99,29 +85,12 @@ public class EventStreamProcessor implements Serializable {
         kafkaParams.put("heartbeat.interval.ms", 500);
         kafkaParams.put("session.timeout.ms", 1000);
         kafkaParams.put("request.timeout.ms", 1500);
-        if (!env.equals(Constants.LOCAL_ENVIRONEMT)) {
-            setSystemProperties(sparkConf);
-        }
         log.info("Using kafka params config {}", sparkConf);
-    }
-
-    private void setSystemProperties(SparkConf sparkConf) {
-        String executorExtraJavaOptions = sparkConf.get("spark.executor.extraJavaOptions");
-        if (!StringUtils.isBlank(executorExtraJavaOptions)) {
-            executorExtraJavaOptions = String.format("%s -D%s=%s -D%s=%s", executorExtraJavaOptions,
-                    ENVIRONMENT_NAME_PROPERTY_IDENTIFIER, env,
-                    CLIENT_NAME_PROPERTY_IDENTIFIER, clientId);
-        } else {
-            executorExtraJavaOptions = String.format("-D%s=%s",
-                    ENVIRONMENT_NAME_PROPERTY_IDENTIFIER, env,
-                    CLIENT_NAME_PROPERTY_IDENTIFIER, clientId);
-        }
-        sparkConf.set("spark.executor.extraJavaOptions", executorExtraJavaOptions);
     }
 
     public void process() throws ProcessingException {
         try {
-            javaStreamingContext = getStreamingContext(eventProcessorConfig);
+            javaStreamingContext = getStreamingContext(applicationConfiguration.getEventProcessorConfig());
             javaStreamingContext.start();
             javaStreamingContext.awaitTermination();
         } catch (Throwable e) {
@@ -155,26 +124,20 @@ public class EventStreamProcessor implements Serializable {
          */
         log.info("Starting transform to save offsets ");
 
-        messages.foreachRDD(new VoidFunction2<JavaRDD<ConsumerRecord<byte[], byte[]>>, Time>() {
-            @Override
-            public void call(JavaRDD<ConsumerRecord<byte[], byte[]>> consumerRecordJavaRDD, Time v2) throws Exception {
-                OffsetRange[] offsets = ((HasOffsetRanges) consumerRecordJavaRDD.rdd()).offsetRanges();
-                offsetRanges.set(offsets);
-                for (OffsetRange offsetRange : offsets) {
-                    log.info("Started Batch processing with offsets {},{},{},{}", offsetRange.topic(), offsetRange.partition(), offsetRange.fromOffset(), offsetRange.untilOffset());
-                }
+        messages.foreachRDD((VoidFunction2<JavaRDD<ConsumerRecord<byte[], byte[]>>, Time>) (consumerRecordJavaRDD, v2) -> {
+            OffsetRange[] offsets = ((HasOffsetRanges) consumerRecordJavaRDD.rdd()).offsetRanges();
+            offsetRanges.set(offsets);
+            for (OffsetRange offsetRange : offsets) {
+                log.info("Started Batch processing with offsets {},{},{},{}", offsetRange.topic(), offsetRange.partition(), offsetRange.fromOffset(), offsetRange.untilOffset());
             }
         });
 
         messages.foreachRDD(
                 (VoidFunction2<JavaRDD<ConsumerRecord<byte[], byte[]>>, Time>) (consumerRecordJavaRDD, time) -> {
                     JavaPairRDD<EntityDimensionCompositeKey, Iterable<InternalEventMeta>> internalEventMetaRDD = consumerRecordJavaRDD.flatMapToPair((PairFlatMapFunction<ConsumerRecord<byte[], byte[]>, EntityDimensionCompositeKey, InternalEventMeta>) consumerRecord -> {
-                        String client = System.getProperty(CLIENT_NAME_PROPERTY_IDENTIFIER);
-                        String environment = System.getProperty(ENVIRONMENT_NAME_PROPERTY_IDENTIFIER);
-                        Helper.initializeRegisteries(client, environment);
-                        try(Timer.Context context = JmxReporterMetricRegistry.getInstance().getEventParsingTimer().time()) {
-                            Helper.initializeClients();
-                            ExternalEventHelper externalEventHelper = configurationModule.getInjector(client, environment).getInstance(ExternalEventHelper.class);
+                        SparkHelper.bootstrap();
+                        try (Timer.Context context = JmxReporterMetricRegistry.getInstance().getEventParsingTimer().time()) {
+                            ExternalEventHelper externalEventHelper = ConfigurationModule.getInjector(applicationConfiguration).getInstance(ExternalEventHelper.class);
                             return externalEventHelper.findInternalEventsForExternalEvent(consumerRecord.value());
                         } catch (Throwable throwable) {
                             log.error("Error processing external event {}", new String(consumerRecord.value()), throwable);
@@ -186,40 +149,28 @@ public class EventStreamProcessor implements Serializable {
                     JavaRDD<ProcessingStageData> batchedRDD = internalEventMetaRDD.mapPartitions((FlatMapFunction<Iterator<Tuple2<EntityDimensionCompositeKey, Iterable<InternalEventMeta>>>, ProcessingStageData>)
                             groupedPartitionIterator -> {
                                 if (groupedPartitionIterator.hasNext()) {
-                                    String client = System.getProperty(CLIENT_NAME_PROPERTY_IDENTIFIER);
-                                    String environment = System.getProperty(ENVIRONMENT_NAME_PROPERTY_IDENTIFIER);
-                                    Helper.initializeRegisteries(client, environment);
-                                    Helper.initializeClients();
-                                    ExternalEventHelper externalEventHelper = configurationModule.getInjector(client, environment).getInstance(ExternalEventHelper.class);
+                                    SparkHelper.bootstrap();
+                                    ExternalEventHelper externalEventHelper = ConfigurationModule.getInjector(applicationConfiguration).getInstance(ExternalEventHelper.class);
                                     return externalEventHelper.createSubListPartitions(groupedPartitionIterator, eventProcessorConfig.getDimensionProcessingBatchSize()).stream().map(ProcessingStageData::new).collect(Collectors.toList()).iterator();
                                 }
                                 return Collections.emptyIterator();
                             }
                     );
                     JavaRDD<ProcessingStageData> fetchedRDD = batchedRDD.map(dimensionFetchRequest -> {
-                        String client = System.getProperty(CLIENT_NAME_PROPERTY_IDENTIFIER);
-                        String environment = System.getProperty(ENVIRONMENT_NAME_PROPERTY_IDENTIFIER);
-                        Helper.initializeRegisteries(client, environment);
-                        Helper.initializeClients();
-                        DimensionFetchStage dimensionFetchStage = configurationModule.getInjector(client, environment).getInstance(DimensionFetchStage.class);
+                        SparkHelper.bootstrap();
+                        DimensionFetchStage dimensionFetchStage = ConfigurationModule.getInjector(applicationConfiguration).getInstance(DimensionFetchStage.class);
                         dimensionFetchStage.execute(dimensionFetchRequest);
                         return dimensionFetchRequest;
                     });
                     JavaRDD<ProcessingStageData> processRDD = fetchedRDD.map(dimensionProcessRequest -> {
-                        String client = System.getProperty(CLIENT_NAME_PROPERTY_IDENTIFIER);
-                        String environment = System.getProperty(ENVIRONMENT_NAME_PROPERTY_IDENTIFIER);
-                        Helper.initializeRegisteries(client, environment);
-                        Helper.initializeClients();
-                        DimensionProcessStage dimensionProcessStage = configurationModule.getInjector(client, environment).getInstance(DimensionProcessStage.class);
+                        SparkHelper.bootstrap();
+                        DimensionProcessStage dimensionProcessStage = ConfigurationModule.getInjector(applicationConfiguration).getInstance(DimensionProcessStage.class);
                         dimensionProcessStage.execute(dimensionProcessRequest);
                         return dimensionProcessRequest;
                     });
                     JavaRDD<ProcessingStageData> persistedRDD = processRDD.map(dimensionPersistRequest -> {
-                        String client = System.getProperty(CLIENT_NAME_PROPERTY_IDENTIFIER);
-                        String environment = System.getProperty(ENVIRONMENT_NAME_PROPERTY_IDENTIFIER);
-                        Helper.initializeRegisteries(client, environment);
-                        Helper.initializeClients();
-                        DimensionSaveStage dimensionSaveStage = configurationModule.getInjector(client, environment).getInstance(DimensionSaveStage.class);
+                        SparkHelper.bootstrap();
+                        DimensionSaveStage dimensionSaveStage = ConfigurationModule.getInjector(applicationConfiguration).getInstance(DimensionSaveStage.class);
                         dimensionSaveStage.execute(dimensionPersistRequest);
                         return dimensionPersistRequest;
                     });

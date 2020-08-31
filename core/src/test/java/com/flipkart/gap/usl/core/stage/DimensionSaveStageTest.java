@@ -36,7 +36,7 @@ public class DimensionSaveStageTest {
 
     @Before
     public void setup() {
-        JmxReporterMetricRegistry.initialiseJmxMetricRegistry("flipkart");
+        JmxReporterMetricRegistry.initialiseJmxMetricRegistry();
     }
 
     @Test

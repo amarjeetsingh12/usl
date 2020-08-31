@@ -40,7 +40,7 @@ public class DimensionProcessStageTest {
 
     @Before
     public void setup() {
-        JmxReporterMetricRegistry.initialiseJmxMetricRegistry("flipkart");
+        JmxReporterMetricRegistry.initialiseJmxMetricRegistry();
     }
 
     @Test

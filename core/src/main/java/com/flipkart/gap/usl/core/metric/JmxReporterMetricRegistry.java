@@ -12,11 +12,11 @@ import java.util.concurrent.TimeUnit;
  */
 public class JmxReporterMetricRegistry {
     private static JmxReporterMetricRegistry instance;
-    private MetricRegistry metricRegistry;
+    private final MetricRegistry metricRegistry;
 
-    private JmxReporterMetricRegistry(String client) {
+    private JmxReporterMetricRegistry() {
         metricRegistry = new MetricRegistry();
-        String metrics = getMetricsDomain(client);
+        String metrics = "metrics";
         JmxReporter jmxReporter = JmxReporter.forRegistry(metricRegistry)
                 .convertRatesTo(TimeUnit.SECONDS)
                 .convertDurationsTo(TimeUnit.MILLISECONDS)
@@ -25,10 +25,10 @@ public class JmxReporterMetricRegistry {
         jmxReporter.start();
     }
 
-    public static void initialiseJmxMetricRegistry(String client) {
+    public static void initialiseJmxMetricRegistry() {
         if (instance == null) {
             synchronized (JmxReporterMetricRegistry.class) {
-                instance = new JmxReporterMetricRegistry(client);
+                instance = new JmxReporterMetricRegistry();
             }
         }
     }
@@ -138,11 +138,4 @@ public class JmxReporterMetricRegistry {
         instance.metricRegistry.histogram("BATCH_SIZE").update(batchSize);
     }
 
-    private String getMetricsDomain(String client) {
-        String metrics = "metrics";
-        if (!client.equals(Constants.DEFAULT_USL_CLIENT)) {
-            metrics += "." + client;
-        }
-        return metrics;
-    }
 }

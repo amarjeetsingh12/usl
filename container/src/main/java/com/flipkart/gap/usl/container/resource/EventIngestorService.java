@@ -5,8 +5,8 @@ import com.flipkart.gap.usl.client.kafka.KafkaEventRequest;
 import com.flipkart.gap.usl.client.kafka.KafkaProducerClient;
 import com.flipkart.gap.usl.client.kafka.ProducerEvent;
 import com.flipkart.gap.usl.container.eventIngestion.EventIngestionConfig;
+import com.flipkart.gap.usl.container.utils.JmxReporterMetricRegistry;
 import com.flipkart.gap.usl.container.utils.SyncEventProcessorService;
-import com.flipkart.gap.usl.core.metric.JmxReporterMetricRegistry;
 import com.flipkart.gap.usl.core.model.event.ExternalEvent;
 import com.flipkart.gap.usl.core.model.external.ExternalEventSchema;
 import com.flipkart.gap.usl.core.store.event.EventTypeDBWrapper;
@@ -22,6 +22,7 @@ import javax.inject.Named;
 @Slf4j
 public class EventIngestorService {
     @Inject
+    @Named("ingestionKafkaClient")
     private KafkaProducerClient kafkaProducerClient;
 
     @Inject
@@ -32,7 +33,7 @@ public class EventIngestorService {
 
     @Inject
     @Named("eventIngestionConfig")
-    private static EventIngestionConfig eventIngestionConfig;
+    private EventIngestionConfig eventIngestionConfig;
 
     /**
      * function to ingest the data to according to relative ingestionType

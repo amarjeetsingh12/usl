@@ -69,7 +69,7 @@ public class DimensionRegistryTest {
         eventMapping.setValidations(ObjectMapperFactory.getMapper().readValue("{\"properties\": {\"parent\": {\"properties\": {\"test\": {\"type\": \"string\",\"pattern\": \"test123\"}},\"type\": \"object\",\"required\": [\"test\"]}},\"required\":[\"parent\"],\"type\": \"object\"}", JsonNode.class));
         ppvEventMappings.add(eventMapping);
         eventMappings.put(externalEventId, ppvEventMappings);
-        JmxReporterMetricRegistry.initialiseJmxMetricRegistry("flipkart");
+        JmxReporterMetricRegistry.initialiseJmxMetricRegistry();
     }
 
     @Test

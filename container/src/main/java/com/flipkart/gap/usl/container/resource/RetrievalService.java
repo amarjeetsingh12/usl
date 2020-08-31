@@ -26,19 +26,13 @@ public class RetrievalService {
     @Inject
     private DimensionRegistry dimensionRegistry;
 
-    private static final String GET_HBASE_POOL_NAME = "hbase-all-dimension";
-
     public <T extends Dimension> Optional<T> getDimensionForEntity(String dimensionName, String entityId) throws ServingLayerException {
-        return getDimensionForEntity(dimensionName, entityId, GET_HBASE_POOL_NAME, false);
-    }
-
-    public <T extends Dimension> Optional<T> getDimensionForEntity(String dimensionName, String entityId, String poolName, boolean useCache) throws ServingLayerException {
         validateRequest(Collections.singletonList(dimensionName));
 
         Class<? extends Dimension> dimensionClass = dimensionRegistry.getDimensionClass(dimensionName);
         DimensionDBRequest dimensionReadDBRequest = new DimensionDBRequest(dimensionClass, entityId, Constants.DIMENSION_VERSION);
         try {
-            T dimension = dimensionStoreDAO.getDimension(dimensionReadDBRequest, poolName, useCache);
+            T dimension = dimensionStoreDAO.getDimension(dimensionReadDBRequest);
             return Optional.ofNullable(dimension);
         } catch (DimensionFetchException e) {
             log.error("Exception in dimension fetch {}", dimensionReadDBRequest, e);

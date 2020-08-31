@@ -9,10 +9,7 @@ import com.flipkart.gap.usl.core.helper.ObjectMapperFactory;
 import com.flipkart.gap.usl.core.metric.JmxReporterMetricRegistry;
 import com.flipkart.gap.usl.core.model.EntityDimensionCompositeKey;
 import com.flipkart.gap.usl.core.model.InternalEventMeta;
-import com.flipkart.gap.usl.core.model.dimension.Dimension;
-import com.flipkart.gap.usl.core.model.dimension.DimensionSpec;
-import com.flipkart.gap.usl.core.model.dimension.DimensionSpecs;
-import com.flipkart.gap.usl.core.model.dimension.EventSpecs;
+import com.flipkart.gap.usl.core.model.dimension.*;
 import com.flipkart.gap.usl.core.model.dimension.event.DimensionEvent;
 import com.flipkart.gap.usl.core.model.dimension.event.DimensionEventType;
 import com.flipkart.gap.usl.core.model.dimension.event.DimensionMergeEvent;
@@ -46,13 +43,13 @@ import java.util.stream.Stream;
 @Singleton
 public class DimensionRegistry {
     // sourceEventId to Active Mapping.
-    private Map<String, Set<EventMapping>> registeredEvents = new ConcurrentHashMap<>();
+    private final Map<String, Set<EventMapping>> registeredEvents = new ConcurrentHashMap<>();
     //map storing internal event to dimension specs
-    private Map<Class<? extends DimensionEvent>, Set<DimensionSpec>> registeredDimensions = new ConcurrentHashMap<>();
+    private final Map<Class<? extends DimensionEvent>, Set<DimensionSpec>> registeredDimensions = new ConcurrentHashMap<>();
     // map to store internal event name to internal event Class
-    private Map<String, Class<? extends DimensionEvent>> internalEventMap = new ConcurrentHashMap<>();
+    private final Map<String, Class<? extends DimensionEvent>> internalEventMap = new ConcurrentHashMap<>();
     // map to store dimensionName to Dimension Class
-    private Map<String, Class<? extends Dimension>> dimensionNameToClassMap = new ConcurrentHashMap<>();
+    private final Map<String, Class<? extends Dimension>> dimensionNameToClassMap = new ConcurrentHashMap<>();
     @Inject
     private EventMappingDBWrapper eventMappingDBWrapper;
     @Inject
@@ -158,11 +155,14 @@ public class DimensionRegistry {
 
                             // adding mapping for each update event class
                             for (Class<? extends DimensionUpdateEvent> dimensionUpdateEventClass : dimensionUpdateEventClassArray) {
-                                addDimensionEventClassMapping(dimensionUpdateEventClass, dimensionClass, dimensionName, DimensionEventType.UPDATE);
+                                if (!dimensionClass.isAssignableFrom(DummyUpdateEvent.class)) {
+                                    addDimensionEventClassMapping(dimensionUpdateEventClass, dimensionClass, dimensionName, DimensionEventType.UPDATE);
+                                }
                             }
-                            // adding mapping for login event class
-                            addDimensionEventClassMapping(dimensionMergeEventClass, dimensionClass, dimensionName, DimensionEventType.MERGE);
-
+                            // adding mapping for merge event class
+                            if (!dimensionClass.isAssignableFrom(DummyMergeEvent.class)) {
+                                addDimensionEventClassMapping(dimensionMergeEventClass, dimensionClass, dimensionName, DimensionEventType.MERGE);
+                            }
                             dimensionNameToClassMap.put(dimensionName, dimensionClass);
                         }
                     } else {
@@ -246,9 +246,9 @@ public class DimensionRegistry {
                 break;
             }
         }
-        Class derivedClass = this.internalEventMap.get(eventMapping.getEventType());
+        Class<? extends DimensionEvent> derivedClass = this.internalEventMap.get(eventMapping.getEventType());
         if (DimensionEvent.class.isAssignableFrom(derivedClass)) {
-            DimensionEvent dimensionEvent = (DimensionEvent) mapper.convertValue(dataNode, derivedClass);
+            DimensionEvent dimensionEvent = mapper.convertValue(dataNode, derivedClass);
             if (StringUtils.isBlank(dimensionEvent.getEntityId())) {
                 String dimensionEventJSON = "";
                 try {

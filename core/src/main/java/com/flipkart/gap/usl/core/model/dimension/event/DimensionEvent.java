@@ -2,8 +2,8 @@ package com.flipkart.gap.usl.core.model.dimension.event;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.validator.constraints.NotEmpty;
 
+import javax.validation.constraints.NotEmpty;
 import java.io.Serializable;
 
 /**
