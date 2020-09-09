@@ -63,10 +63,13 @@ public class EventStreamProcessor implements Serializable {
         log.info("Initialising configs");
         EventProcessorConfig eventProcessorConfig = applicationConfiguration.getEventProcessorConfig();
         sparkConf = new SparkConf().setMaster(eventProcessorConfig.getSparkMasterWithPort()).setAppName(Constants.Stream.GROUP_ID);
-        sparkConf.set("spark.streaming.backpressure.initialRate", "20000");
+        sparkConf.set("spark.streaming.backpressure.initialRate", eventProcessorConfig.getBackPressureInitialRate());
         sparkConf.set("spark.dynamicAllocation.enabled", "false");
         sparkConf.set("spark.streaming.receiver.maxRate", eventProcessorConfig.getBatchSize() + "");
-        sparkConf.set("spark.streaming.kafka.consumer.poll.ms", "100000");
+        sparkConf.set("spark.streaming.stopGracefullyOnShutdown", "true");
+        sparkConf.set("spark.executor.extraJavaOptions", eventProcessorConfig.getExecutorExtraJavaOpts());
+        sparkConf.set("spark.executor.cores", eventProcessorConfig.getExecutorCores() + "");
+        sparkConf.set("spark.executor.memory", eventProcessorConfig.getExecutorMemory());
         sparkConf.set("spark.job.interruptOnCancel", "true");
         int maxRate = eventProcessorConfig.getBatchSize();
         int partitionCount = kafkaClient.getPartitionCount();
@@ -77,14 +80,14 @@ public class EventStreamProcessor implements Serializable {
         kafkaParams.put("bootstrap.servers", eventProcessorConfig.getKafkaBrokerConnection());
         kafkaParams.put("key.deserializer", ByteArrayDeserializer.class);
         kafkaParams.put("value.deserializer", ByteArrayDeserializer.class);
-        kafkaParams.put("group.id", "usl_spark");
-        kafkaParams.put("auto.offset.reset", "latest");
-        kafkaParams.put("enable.auto.commit", false);
-        kafkaParams.put("fetch.max.wait.ms", 100);
-        kafkaParams.put("fetch.min.bytes", 1);
-        kafkaParams.put("heartbeat.interval.ms", 500);
-        kafkaParams.put("session.timeout.ms", 1000);
-        kafkaParams.put("request.timeout.ms", 1500);
+        kafkaParams.put("group.id", eventProcessorConfig.getKafkaConfig().getGroupId());
+        kafkaParams.put("auto.offset.reset", eventProcessorConfig.getKafkaConfig().getAutoOffsetReset());
+        kafkaParams.put("enable.auto.commit", eventProcessorConfig.getKafkaConfig().isEnableAutoCommit());
+        kafkaParams.put("fetch.max.wait.ms", eventProcessorConfig.getKafkaConfig().getFetchMaxWait());
+        kafkaParams.put("fetch.min.bytes", eventProcessorConfig.getKafkaConfig().getFetchMinBytes());
+        kafkaParams.put("heartbeat.interval.ms", eventProcessorConfig.getKafkaConfig().getHeartBeatIntervalMS());
+        kafkaParams.put("session.timeout.ms", eventProcessorConfig.getKafkaConfig().getSessionTimeoutMS());
+        kafkaParams.put("request.timeout.ms", eventProcessorConfig.getKafkaConfig().getRequestTimeoutMS());
         log.info("Using kafka params config {}", sparkConf);
     }
 

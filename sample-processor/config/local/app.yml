@@ -5,6 +5,10 @@ coreConfig:
     kafkaBrokerConnection: localhost:9092
     zkHosts: localhost
     zkPort: 2182
+    executorCores: 1
+    executorMemory: 1g
+    kafkaConfig:
+      heartBeatIntervalMS: 600
   dimensionPackage: com.flipkart.usl.processor.sample
   mongoConfig:
     connectionString: localhost:27017
