@@ -48,7 +48,7 @@ public class EventProcessorConfig implements Serializable {
 
     @Getter
     @Setter
-    public static class KafkaConfig {
+    public static class KafkaConfig implements Serializable {
         private String groupId = "spark_processor";
         private String autoOffsetReset = "latest";
         private boolean enableAutoCommit = false;

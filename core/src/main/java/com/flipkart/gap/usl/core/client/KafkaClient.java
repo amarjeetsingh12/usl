@@ -4,17 +4,18 @@ import com.flipkart.gap.usl.core.config.EventProcessorConfig;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
-import kafka.api.OffsetRequest;
-import kafka.api.PartitionOffsetRequestInfo;
-import kafka.common.TopicAndPartition;
-import kafka.javaapi.OffsetResponse;
-import kafka.javaapi.TopicMetadataRequest;
-import kafka.javaapi.consumer.SimpleConsumer;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.common.TopicPartition;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.stream.Collectors;
 
 /**
  * Created by amarjeet.singh on 13/10/16.
@@ -26,9 +27,11 @@ public class KafkaClient {
     @Named("eventProcessorConfig")
     private EventProcessorConfig eventProcessorConfig;
     private Producer<String, byte[]> producer;
-
+    private KafkaConsumer<String, byte[]> consumer;
+    private int producerCount;
 
     public KafkaClient() {
+        System.out.println();
     }
 
     @Inject
@@ -38,11 +41,20 @@ public class KafkaClient {
         props.put(org.apache.kafka.clients.producer.ProducerConfig.ACKS_CONFIG, "all");
         props.put(org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArraySerializer");
         props.put(org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArraySerializer");
+
+        Properties consumerProperties = new Properties();
+        consumerProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "test");
+        consumerProperties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
+        consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+        consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+        consumer = new KafkaConsumer<>(consumerProperties);
         producer = new KafkaProducer<>(props);
+        producerCount = producer.partitionsFor(eventProcessorConfig.getTopicName()).size();
     }
 
     public int getPartitionCount() {
-        return producer.partitionsFor(eventProcessorConfig.getTopicName()).size();
+        return producerCount;
     }
 
     public Map<Integer, Long> getPartitionOffsets() throws Exception {
@@ -58,42 +70,12 @@ public class KafkaClient {
     }
 
     private Map<Integer, Long> findPartitionOffsets(String host, int port) throws Exception {
-        int soTimeout = 100000;
-        int bufferSize = 64 * 1024;
-        String clientName = "usl";
-        String topicName = eventProcessorConfig.getTopicName();
-        Map<Integer, Long> partitionMap = new HashMap<>();
-        SimpleConsumer consumer = new SimpleConsumer(host,
-                port,
-                soTimeout,
-                bufferSize, clientName);
-        List<String> topics = new ArrayList<>();
-        topics.add(topicName);
-        TopicMetadataRequest req = new TopicMetadataRequest(topics);
-        kafka.javaapi.TopicMetadataResponse resp = consumer.send(req);
-        List<kafka.javaapi.TopicMetadata> data3 = resp.topicsMetadata();
-        for (kafka.javaapi.TopicMetadata item : data3) {
-            for (kafka.javaapi.PartitionMetadata part : item.partitionsMetadata()) {
-                int partitionId = part.partitionId();
-                SimpleConsumer myConsumer = new SimpleConsumer(part.leader().host(), part.leader().port(),
-                        soTimeout, bufferSize, clientName);
-                try {
-                    TopicAndPartition topicAndPartition = new TopicAndPartition(topicName, partitionId);
-                    Map<TopicAndPartition, PartitionOffsetRequestInfo> requestInfo = new HashMap<>();
-                    requestInfo.put(topicAndPartition, new PartitionOffsetRequestInfo(
-                            OffsetRequest.EarliestTime(), 1));
-                    kafka.javaapi.OffsetRequest request = new kafka.javaapi.OffsetRequest(
-                            requestInfo, kafka.api.OffsetRequest.CurrentVersion(),
-                            clientName);
-                    OffsetResponse response = myConsumer.getOffsetsBefore(request);
-                    long[] offsets = response.offsets(topicName, partitionId);
-                    partitionMap.put(partitionId, offsets[0]);
-                } finally {
-                    myConsumer.close();
-                }
-            }
+        List<TopicPartition> topicPartitions = new ArrayList<>();
+        for (int i = 0; i < producerCount; i++) {
+            topicPartitions.add(new TopicPartition(eventProcessorConfig.getTopicName(), i));
         }
-        return partitionMap;
+        Map<TopicPartition, Long> offsetMap = consumer.beginningOffsets(topicPartitions);
+        return offsetMap.entrySet().stream().collect(Collectors.toMap(entry -> entry.getKey().partition(), Map.Entry::getValue));
     }
 
     public void tearDown() {
