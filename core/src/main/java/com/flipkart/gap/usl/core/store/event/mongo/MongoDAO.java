@@ -12,6 +12,7 @@ import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 
@@ -22,7 +23,7 @@ import java.util.Optional;
 public class MongoDAO {
     private MongoClient mongoClient;
     private MongoConfig mongoConfig;
-    
+
     public MongoDAO(MongoConfig mongoConfig) {
         List<ServerAddress> serverAddresses = new ArrayList<>();
         String[] hosts = mongoConfig.getConnectionString().split(",");
@@ -30,15 +31,33 @@ public class MongoDAO {
             String[] parts = host.split(":");
             serverAddresses.add(new ServerAddress(parts[0], Integer.parseInt(parts[1])));
         }
-        this.mongoClient = new MongoClient(serverAddresses, MongoClientOptions.builder()
-                .connectTimeout(mongoConfig.getConnectionTimeout())
-                .socketTimeout(mongoConfig.getRequestTimeout())
-                .connectionsPerHost(mongoConfig.getConnectionsPerHost())
-                .maxConnectionIdleTime(60000)
-                .retryWrites(true)
-                .readPreference(ReadPreference.secondary())
-                .writeConcern(WriteConcern.MAJORITY)
-                .build());
+        if (StringUtils.isNotEmpty(mongoConfig.getUsername())) {
+            String username = mongoConfig.getUsername();
+            char[] password = mongoConfig.getPassword();
+            MongoCredential mongoCredential = MongoCredential.createCredential(username, mongoConfig.getDbName(), password);
+            this.mongoClient = new MongoClient(serverAddresses, mongoCredential, MongoClientOptions.builder()
+                    .connectTimeout(mongoConfig.getConnectionTimeout())
+                    .socketTimeout(mongoConfig.getRequestTimeout())
+                    .connectionsPerHost(mongoConfig.getConnectionsPerHost())
+                    .maxConnectionIdleTime(60000)
+                    .retryWrites(true)
+                    .readPreference(ReadPreference.secondary())
+                    .writeConcern(WriteConcern.MAJORITY)
+                    .requiredReplicaSetName(mongoConfig.getReplicaSet())
+                    .build());
+        }
+        else {
+            this.mongoClient = new MongoClient(serverAddresses, MongoClientOptions.builder()
+                    .connectTimeout(mongoConfig.getConnectionTimeout())
+                    .socketTimeout(mongoConfig.getRequestTimeout())
+                    .connectionsPerHost(mongoConfig.getConnectionsPerHost())
+                    .maxConnectionIdleTime(60000)
+                    .retryWrites(true)
+                    .readPreference(ReadPreference.secondary())
+                    .writeConcern(WriteConcern.MAJORITY)
+                    .requiredReplicaSetName(mongoConfig.getReplicaSet())
+                    .build());
+        }
         this.mongoConfig = mongoConfig;
     }
 

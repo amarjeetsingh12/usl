@@ -19,4 +19,5 @@ public class USLBootstrapConfig extends Configuration {
     public SwaggerBundleConfiguration swaggerBundleConfiguration;
     private ApplicationConfiguration coreConfig;
     private EventIngestionConfig eventIngestionConfig;
+    private String healthCheckKey = "default";
 }

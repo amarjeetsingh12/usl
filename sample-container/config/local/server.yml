@@ -51,3 +51,4 @@ coreConfig:
     parentNode: /hbase
   cacheConfig:
     ttlInMinutes: 30
+healthCheckKey: blah

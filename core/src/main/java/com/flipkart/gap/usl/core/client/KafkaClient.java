@@ -43,11 +43,11 @@ public class KafkaClient {
         props.put(org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArraySerializer");
 
         Properties consumerProperties = new Properties();
-        consumerProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
-        consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, "test");
+        consumerProperties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, eventProcessorConfig.getKafkaBrokerConnection());
+        consumerProperties.put(ConsumerConfig.GROUP_ID_CONFIG, eventProcessorConfig.getKafkaConfig().getGroupId());
         consumerProperties.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         consumerProperties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
-        consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringDeserializer");
+        consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArrayDeserializer");
         consumer = new KafkaConsumer<>(consumerProperties);
         producer = new KafkaProducer<>(props);
         producerCount = producer.partitionsFor(eventProcessorConfig.getTopicName()).size();
@@ -58,18 +58,6 @@ public class KafkaClient {
     }
 
     public Map<Integer, Long> getPartitionOffsets() throws Exception {
-        for (String broker : eventProcessorConfig.getKafkaBrokerConnection().split(",")) {
-            String parts[] = broker.split(":");
-            try {
-                return findPartitionOffsets(parts[0], Integer.parseInt(parts[1]));
-            } catch (Throwable t) {
-                log.error("Error finding offsets from host {}", String.join(parts[0], parts[1]), t);
-            }
-        }
-        throw new Exception("Unable to find offsets from any of the brokers");
-    }
-
-    private Map<Integer, Long> findPartitionOffsets(String host, int port) throws Exception {
         List<TopicPartition> topicPartitions = new ArrayList<>();
         for (int i = 0; i < producerCount; i++) {
             topicPartitions.add(new TopicPartition(eventProcessorConfig.getTopicName(), i));

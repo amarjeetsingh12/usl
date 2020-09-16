@@ -8,6 +8,9 @@ import java.io.Serializable;
 public class MongoConfig implements Serializable {
     private String dbName;
     private String connectionString;
+    private String username;
+    private char[] password;
+    private String replicaSet;
     private int requestTimeout=10000;
     private int connectionTimeout = 3000;
     private int connectionsPerHost = 3;

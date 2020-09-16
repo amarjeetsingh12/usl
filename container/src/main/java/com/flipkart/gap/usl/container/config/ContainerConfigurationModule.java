@@ -18,5 +18,6 @@ public class ContainerConfigurationModule extends AbstractModule {
     protected void configure() {
         bind(EventIngestionConfig.class).annotatedWith(Names.named("eventIngestionConfig")).toInstance(configuration.getEventIngestionConfig());
         bind(KafkaProducerClient.class).annotatedWith(Names.named("ingestionKafkaClient")).toInstance(new KafkaProducerClient(configuration.getEventIngestionConfig().getKafkaIngestionConfig()));
+        bind(String.class).annotatedWith(Names.named("healthCheckKey")).toInstance(configuration.getHealthCheckKey());
     }
 }
