@@ -16,6 +16,8 @@ public class HbaseConfig implements Serializable {
     private String parentNode;
     private int soConnect = 10000;
     private int soRead = 2000;
+    private int clientOperationTimeout = 2000;
+    private int retryCount = 0;
     private int soWrite = 2000;
     private int ipcPoolSize = 1;
     private int executorPoolSize = 100;

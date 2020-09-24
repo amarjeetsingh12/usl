@@ -54,9 +54,11 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
         config.set(HConstants.ZOOKEEPER_QUORUM, hbaseConfig.getZookeeperQuorum());
         config.setInt(HConstants.ZOOKEEPER_CLIENT_PORT, hbaseConfig.getZookeeperClientPort());
         config.set(HConstants.ZOOKEEPER_ZNODE_PARENT, hbaseConfig.getParentNode());
-        config.setInt(RpcClient.SOCKET_TIMEOUT_CONNECT, hbaseConfig.getSoConnect());
-        config.setInt(RpcClient.SOCKET_TIMEOUT_READ, hbaseConfig.getSoRead());
-        config.setInt(RpcClient.SOCKET_TIMEOUT_WRITE, hbaseConfig.getSoWrite());
+        config.setInt(HConstants.HBASE_RPC_TIMEOUT_KEY, hbaseConfig.getSoConnect());
+        config.setInt(HConstants.HBASE_RPC_READ_TIMEOUT_KEY, hbaseConfig.getSoRead());
+        config.setInt(HConstants.HBASE_CLIENT_RETRIES_NUMBER, hbaseConfig.getRetryCount());
+        config.setInt(HConstants.HBASE_CLIENT_OPERATION_TIMEOUT,hbaseConfig.getClientOperationTimeout());
+        config.setInt(HConstants.HBASE_RPC_WRITE_TIMEOUT_KEY, hbaseConfig.getSoWrite());
         config.setInt(HConstants.HBASE_CLIENT_IPC_POOL_SIZE, hbaseConfig.getIpcPoolSize());
         return config;
     }
