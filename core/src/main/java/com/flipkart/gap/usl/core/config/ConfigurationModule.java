@@ -1,5 +1,6 @@
 package com.flipkart.gap.usl.core.config;
 
+import com.flipkart.gap.usl.core.config.resilience.ApplicationResilienceConfig;
 import com.flipkart.gap.usl.core.store.dimension.DimensionStoreDAO;
 import com.flipkart.gap.usl.core.store.dimension.hbase.HBaseDimensionStoreDAO;
 import com.flipkart.gap.usl.core.store.event.EventMappingStore;
@@ -44,6 +45,7 @@ public class ConfigurationModule extends AbstractModule {
         bind(DimensionStoreDAO.class).to(HBaseDimensionStoreDAO.class);
         bind(CacheConfig.class).annotatedWith(Names.named("cacheConfig")).toInstance(configuration.getCacheConfig());
         bind(EventProcessorConfig.class).annotatedWith(Names.named("eventProcessorConfig")).toInstance(configuration.getEventProcessorConfig());
+        bind(ApplicationResilienceConfig.class).toInstance(configuration.getApplicationResilienceConfig());
         bind(ApplicationConfiguration.class).toInstance(configuration);
         bind(String.class).annotatedWith(Names.named("dimensionPackage")).toInstance(configuration.getDimensionPackage());
         bind(SyncEventProcessor.class).to(SyncEventProcessorImpl.class);

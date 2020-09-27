@@ -1,12 +1,16 @@
 package com.flipkart.gap.usl.core.store.dimension.hbase;
 
+import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.flipkart.gap.usl.core.config.HbaseConfig;
 import com.flipkart.gap.usl.core.helper.ObjectMapperFactory;
+import com.flipkart.gap.usl.core.metric.JmxReporterMetricRegistry;
 import com.flipkart.gap.usl.core.model.dimension.Dimension;
 import com.flipkart.gap.usl.core.model.dimension.DimensionSpecs;
 import com.flipkart.gap.usl.core.store.dimension.DimensionDBRequest;
 import com.flipkart.gap.usl.core.store.dimension.DimensionStoreDAO;
+import com.flipkart.gap.usl.core.store.dimension.resilence.DecoratorExecutionException;
+import com.flipkart.gap.usl.core.store.dimension.resilence.ResilenceDecorator;
 import com.flipkart.gap.usl.core.store.exception.DimensionDeleteException;
 import com.flipkart.gap.usl.core.store.exception.DimensionFetchException;
 import com.flipkart.gap.usl.core.store.exception.DimensionPersistException;
@@ -21,7 +25,6 @@ import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.ipc.RpcClient;
 import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
@@ -40,6 +43,12 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
     private RowKeyDistributorByHashPrefix keyDistributor;
     private TableName tableName;
     private static ExecutorService execService;
+    @Inject
+    private ResilenceDecorator resilenceDecorator;
+    private static final String GET_DIMENSION_TIMER = "getDimension";
+    private static final String GET_BULK_DIMENSION_TIMER = "getBulkDimensions";
+    private static final String PUT_BULK_DIMENSION_TIMER = "putBulkDimensions";
+    private static final String DELETE_DIMENSION_TIMER = "deletedDimension";
 
     @Inject
     public void init() throws IOException {
@@ -57,7 +66,7 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
         config.setInt(HConstants.HBASE_RPC_TIMEOUT_KEY, hbaseConfig.getSoConnect());
         config.setInt(HConstants.HBASE_RPC_READ_TIMEOUT_KEY, hbaseConfig.getSoRead());
         config.setInt(HConstants.HBASE_CLIENT_RETRIES_NUMBER, hbaseConfig.getRetryCount());
-        config.setInt(HConstants.HBASE_CLIENT_OPERATION_TIMEOUT,hbaseConfig.getClientOperationTimeout());
+        config.setInt(HConstants.HBASE_CLIENT_OPERATION_TIMEOUT, hbaseConfig.getClientOperationTimeout());
         config.setInt(HConstants.HBASE_RPC_WRITE_TIMEOUT_KEY, hbaseConfig.getSoWrite());
         config.setInt(HConstants.HBASE_CLIENT_IPC_POOL_SIZE, hbaseConfig.getIpcPoolSize());
         return config;
@@ -69,13 +78,17 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
 
     @Override
     public <T extends Dimension> T getDimension(DimensionDBRequest dimensionReadDBRequest) throws DimensionFetchException {
-        try {
-            Get getOp = getFetchOp(dimensionReadDBRequest);
-            try (Table table = getTable()) {
-                Result result = table.get(getOp);
-                return readResult(result, dimensionReadDBRequest);
-            }
-        } catch (IOException e) {
+        try (Timer.Context context = JmxReporterMetricRegistry.getMetricRegistry().timer(GET_DIMENSION_TIMER).time()) {
+            return resilenceDecorator.execute(ResilenceDecorator.DIMENSION_READ_SERVICE, () -> {
+                Get getOp = getFetchOp(dimensionReadDBRequest);
+                try (Table table = getTable()) {
+                    Result result = table.get(getOp);
+                    return readResult(result, dimensionReadDBRequest);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        } catch (DecoratorExecutionException e) {
             throw new DimensionFetchException(e);
         }
     }
@@ -108,21 +121,26 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
             getOps.add(fetchOp);
             rowKeyMap.put(new String(fetchOp.getRow()), dimensionDBRequest);
         }
-        try {
-            try (Table table = getTable()) {
-                Result[] results = table.get(getOps);
-                for (Result result : results) {
-                    if(!result.isEmpty()) {
-                        byte[] row = result.getRow();
-                        DimensionDBRequest dimensionDBRequest = rowKeyMap.get(new String(row));
-                        responseMap.put(dimensionDBRequest, readResult(result, dimensionDBRequest));
+        try (Timer.Context context = JmxReporterMetricRegistry.getMetricRegistry().timer(GET_BULK_DIMENSION_TIMER).time()) {
+            return resilenceDecorator.execute(ResilenceDecorator.DIMENSION_BULK_READ_SERVICE, () -> {
+                try (Table table = getTable()) {
+                    Result[] results = table.get(getOps);
+                    for (Result result : results) {
+                        if (!result.isEmpty()) {
+                            byte[] row = result.getRow();
+                            DimensionDBRequest dimensionDBRequest = rowKeyMap.get(new String(row));
+                            responseMap.put(dimensionDBRequest, readResult(result, dimensionDBRequest));
+                        }
                     }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
-            }
-            return responseMap;
-        } catch (IOException e) {
+                return responseMap;
+            });
+        } catch (DecoratorExecutionException e) {
             throw new DimensionFetchException(e);
         }
+
     }
 
     private Put getPut(Dimension dimension) throws JsonProcessingException {
@@ -143,22 +161,36 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
                 throw new DimensionPersistException("Unable to process json", e);
             }
         }
-        try (Table table = getTable()) {
-            table.put(puts);
-        } catch (IOException e) {
-            throw new DimensionPersistException("Unable to get table", e);
+        try (Timer.Context context = JmxReporterMetricRegistry.getMetricRegistry().timer(PUT_BULK_DIMENSION_TIMER).time()) {
+            resilenceDecorator.execute(ResilenceDecorator.DIMENSION_BULK_SAVE_SERVICE, () -> {
+                try (Table table = getTable()) {
+                    table.put(puts);
+                    return true;
+                } catch (IOException e) {
+                    throw new RuntimeException("Unable to get table", e);
+                }
+            });
+        } catch (DecoratorExecutionException e) {
+            throw new DimensionPersistException(e);
         }
     }
 
 
     @Override
     public void deleteDimension(DimensionDBRequest dimensionReadDBRequest) throws DimensionDeleteException {
-        try (Table table = getTable()) {
-            DimensionSpecs dimensionSpecs = dimensionReadDBRequest.getDimensionClass().getAnnotation(DimensionSpecs.class);
-            byte[] distributedKey = getDistributedKey(getRowKey(dimensionReadDBRequest.getEntityId(), dimensionSpecs.name(), dimensionReadDBRequest.getVersion()));
-            table.delete(new Delete(distributedKey));
-        } catch (IOException e) {
-            throw new DimensionDeleteException("Unable to get table", e);
+        try (Timer.Context context = JmxReporterMetricRegistry.getMetricRegistry().timer(DELETE_DIMENSION_TIMER).time()) {
+            resilenceDecorator.execute(ResilenceDecorator.DIMENSION_DELETE_SERVICE, () -> {
+                try (Table table = getTable()) {
+                    DimensionSpecs dimensionSpecs = dimensionReadDBRequest.getDimensionClass().getAnnotation(DimensionSpecs.class);
+                    byte[] distributedKey = getDistributedKey(getRowKey(dimensionReadDBRequest.getEntityId(), dimensionSpecs.name(), dimensionReadDBRequest.getVersion()));
+                    table.delete(new Delete(distributedKey));
+                    return true;
+                } catch (IOException e) {
+                    throw new RuntimeException("Unable to get table", e);
+                }
+            });
+        } catch (DecoratorExecutionException e) {
+            throw new DimensionDeleteException(e);
         }
     }
 

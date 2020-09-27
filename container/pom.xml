@@ -13,8 +13,8 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <dropwizard.version>2.0.12</dropwizard.version>
-        <dropwizard.metrics.version>4.1.12.1</dropwizard.metrics.version>
+        <dropwizard.version>1.2.4</dropwizard.version>
+        <dropwizard.metrics.version>3.2.5</dropwizard.metrics.version>
         <jackson.version>2.9.7</jackson.version>
     </properties>
 
@@ -72,7 +72,32 @@
                     <groupId>rg.apache.spark</groupId>
                     <artifactId>spark-streaming-kafka-0-10_2.11</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>io.dropwizard.metrics</groupId>
+                    <artifactId>metrics-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.dropwizard.metrics</groupId>
+                    <artifactId>metrics-jvm</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.dropwizard.metrics</groupId>
+                    <artifactId>metrics-json</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.dropwizard.metrics</groupId>
+                    <artifactId>metrics-graphite</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.hibernate.validator</groupId>
+                    <artifactId>hibernate-validator</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>5.4.3.Final</version>
         </dependency>
         <dependency>
             <groupId>io.dropwizard</groupId>
@@ -82,11 +107,6 @@
         <dependency>
             <groupId>io.dropwizard.metrics</groupId>
             <artifactId>metrics-core</artifactId>
-            <version>${dropwizard.metrics.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.dropwizard.metrics</groupId>
-            <artifactId>metrics-jmx</artifactId>
             <version>${dropwizard.metrics.version}</version>
         </dependency>
         <dependency>

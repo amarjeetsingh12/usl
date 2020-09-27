@@ -35,12 +35,85 @@ eventIngestionConfig:
     brokerConnectionString: localhost:9092
     zkConnectionString: localhost:2181
 coreConfig:
+  applicationResilienceConfig:
+    dimensionReadConfig:
+      bulkheadConfig:
+        maxConcurrentCalls: 100
+        maxWaitDuration: 500
+      circuitBreakerConfig:
+        waitDurationInOpenState: 10000
+        minimumNumberOfCalls: 100
+        slidingWindowSize: 100
+        permittedNumberOfCallsInHalfOpenState: 100
+        slowCallDurationThreshold: 300
+        slowCallRateThreshold: 100
+        failureRateThreshold: 50
+      rateLimiterConfig:
+        limitRefreshPeriod: 1000
+        limitForPeriod: 12000
+        timeoutDuration: 500
+      timeLimiterConfig:
+        timeoutDuration: 500
+    dimensionBulkReadConfig:
+      bulkheadConfig:
+        maxConcurrentCalls: 100
+        maxWaitDuration: 500
+      circuitBreakerConfig:
+        waitDurationInOpenState: 10000
+        minimumNumberOfCalls: 100
+        slidingWindowSize: 100
+        permittedNumberOfCallsInHalfOpenState: 100
+        slowCallDurationThreshold: 500
+        slowCallRateThreshold: 100
+        failureRateThreshold: 50
+      rateLimiterConfig:
+        limitRefreshPeriod: 1000
+        limitForPeriod: 10000
+        timeoutDuration: 500
+      timeLimiterConfig:
+        timeoutDuration: 60000
+    dimensionBulkSaveConfig:
+      bulkheadConfig:
+        maxConcurrentCalls: 100
+        maxWaitDuration: 500
+      circuitBreakerConfig:
+        waitDurationInOpenState: 10000
+        minimumNumberOfCalls: 100
+        slidingWindowSize: 100
+        permittedNumberOfCallsInHalfOpenState: 100
+        slowCallDurationThreshold: 500
+        slowCallRateThreshold: 100
+        failureRateThreshold: 50
+      rateLimiterConfig:
+        limitRefreshPeriod: 1000
+        limitForPeriod: 1000
+        timeoutDuration: 500
+      timeLimiterConfig:
+        timeoutDuration: 60000
+    dimensionDeleteConfig:
+      bulkheadConfig:
+        maxConcurrentCalls: 100
+        maxWaitDuration: 500
+      circuitBreakerConfig:
+        waitDurationInOpenState: 10000
+        minimumNumberOfCalls: 100
+        slidingWindowSize: 100
+        permittedNumberOfCallsInHalfOpenState: 100
+        slowCallDurationThreshold: 500
+        slowCallRateThreshold: 100
+        failureRateThreshold: 50
+      rateLimiterConfig:
+        limitRefreshPeriod: 1000
+        limitForPeriod: 10
+        timeoutDuration: 500
+      timeLimiterConfig:
+        timeoutDuration: 60000
   eventProcessorConfig:
     sparkMasterWithPort: local[2]
     topicName: local-usl
     kafkaBrokerConnection: localhost:9092
     zkHosts: localhost
-    zkPort: 2182
+    zkPort: 2181
   dimensionPackage: com.flipkart.usl.processor.sample
   mongoConfig:
     connectionString: localhost:27017
