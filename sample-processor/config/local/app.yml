@@ -71,7 +71,7 @@ coreConfig:
         limitForPeriod: 10
         timeoutDuration: 500
       timeLimiterConfig:
-        timeoutDuration: 60000
+        timeoutDuration: 1000
   eventProcessorConfig:
     sparkMasterWithPort: local[2]
     topicName: local-usl
