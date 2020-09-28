@@ -49,6 +49,10 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
     private static final String GET_BULK_DIMENSION_TIMER = "getBulkDimensions";
     private static final String PUT_BULK_DIMENSION_TIMER = "putBulkDimensions";
     private static final String DELETE_DIMENSION_TIMER = "deletedDimension";
+    public static final String DIMENSION_READ_SERVICE = "dimensionReadConfig";
+    public static final String DIMENSION_BULK_READ_SERVICE = "dimensionBulkReadConfig";
+    public static final String DIMENSION_BULK_SAVE_SERVICE = "dimensionBulkSaveConfig";
+    public static final String DIMENSION_DELETE_SERVICE = "dimensionDeleteConfig";
 
     @Inject
     public void init() throws IOException {
@@ -79,7 +83,7 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
     @Override
     public <T extends Dimension> T getDimension(DimensionDBRequest dimensionReadDBRequest) throws DimensionFetchException {
         try (Timer.Context context = JmxReporterMetricRegistry.getMetricRegistry().timer(GET_DIMENSION_TIMER).time()) {
-            return resilenceDecorator.execute(ResilenceDecorator.DIMENSION_READ_SERVICE, () -> {
+            return resilenceDecorator.execute(DIMENSION_READ_SERVICE, () -> {
                 Get getOp = getFetchOp(dimensionReadDBRequest);
                 try (Table table = getTable()) {
                     Result result = table.get(getOp);
@@ -122,7 +126,7 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
             rowKeyMap.put(new String(fetchOp.getRow()), dimensionDBRequest);
         }
         try (Timer.Context context = JmxReporterMetricRegistry.getMetricRegistry().timer(GET_BULK_DIMENSION_TIMER).time()) {
-            return resilenceDecorator.execute(ResilenceDecorator.DIMENSION_BULK_READ_SERVICE, () -> {
+            return resilenceDecorator.execute(DIMENSION_BULK_READ_SERVICE, () -> {
                 try (Table table = getTable()) {
                     Result[] results = table.get(getOps);
                     for (Result result : results) {
@@ -162,7 +166,7 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
             }
         }
         try (Timer.Context context = JmxReporterMetricRegistry.getMetricRegistry().timer(PUT_BULK_DIMENSION_TIMER).time()) {
-            resilenceDecorator.execute(ResilenceDecorator.DIMENSION_BULK_SAVE_SERVICE, () -> {
+            resilenceDecorator.execute(DIMENSION_BULK_SAVE_SERVICE, () -> {
                 try (Table table = getTable()) {
                     table.put(puts);
                     return true;
@@ -179,7 +183,7 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
     @Override
     public void deleteDimension(DimensionDBRequest dimensionReadDBRequest) throws DimensionDeleteException {
         try (Timer.Context context = JmxReporterMetricRegistry.getMetricRegistry().timer(DELETE_DIMENSION_TIMER).time()) {
-            resilenceDecorator.execute(ResilenceDecorator.DIMENSION_DELETE_SERVICE, () -> {
+            resilenceDecorator.execute(DIMENSION_DELETE_SERVICE, () -> {
                 try (Table table = getTable()) {
                     DimensionSpecs dimensionSpecs = dimensionReadDBRequest.getDimensionClass().getAnnotation(DimensionSpecs.class);
                     byte[] distributedKey = getDistributedKey(getRowKey(dimensionReadDBRequest.getEntityId(), dimensionSpecs.name(), dimensionReadDBRequest.getVersion()));

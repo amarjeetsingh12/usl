@@ -1,5 +1,7 @@
 package com.flipkart.gap.usl.container.resource;
 
+import com.flipkart.gap.usl.container.responseobjects.DimensionNotFoundResponse;
+import com.flipkart.gap.usl.container.responseobjects.ErrorResponse;
 import com.google.inject.Inject;
 
 import com.codahale.metrics.annotation.Timed;
@@ -53,9 +55,9 @@ public class RetrievalResource {
         try {
             Optional<Dimension> dimension = retrievalService.getDimensionForEntity(dimensionName, entityId);
             return dimension.map(d -> Response.status(HttpStatus.SC_OK).entity(d).build())
-                    .orElseGet(() -> Response.status(HttpStatus.SC_NOT_FOUND).entity("Dimension Not found for the user - " + entityId).build());
+                    .orElseGet(() -> Response.status(HttpStatus.SC_NOT_FOUND).entity(new DimensionNotFoundResponse(entityId, dimensionName)).build());
         } catch (ServingLayerException e) {
-            return Response.status(e.getHttpStatus()).entity(e.getMessage()).build();
+            return Response.status(e.getHttpStatus()).entity(new ErrorResponse(e.getMessage())).build();
         }
     }
 
@@ -69,12 +71,12 @@ public class RetrievalResource {
         try {
             Collection<Dimension> dimensions = retrievalService.getDimensionsListForEntity(entityId, dimensionsToFetch);
             if (CollectionUtils.isEmpty(dimensions)) {
-                return Response.status(HttpStatus.SC_NOT_FOUND).entity("Dimension not found for the user - " + entityId).build();
+                return Response.status(HttpStatus.SC_NOT_FOUND).entity(new DimensionNotFoundResponse(entityId, dimensionsToFetch)).build();
             } else {
                 return Response.status(HttpStatus.SC_OK).entity(dimensions).build();
             }
         } catch (ServingLayerException e) {
-            return Response.status(e.getHttpStatus()).entity(e.getMessage()).build();
+            return Response.status(e.getHttpStatus()).entity(new ErrorResponse(e.getMessage())).build();
         }
     }
 

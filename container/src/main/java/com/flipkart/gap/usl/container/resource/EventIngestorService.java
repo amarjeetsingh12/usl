@@ -1,5 +1,6 @@
 package com.flipkart.gap.usl.container.resource;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.flipkart.gap.usl.client.kafka.KafkaEventRequest;
 import com.flipkart.gap.usl.client.kafka.KafkaProducerClient;
@@ -9,6 +10,8 @@ import com.flipkart.gap.usl.container.utils.SyncEventProcessorService;
 import com.flipkart.gap.usl.core.metric.JmxReporterMetricRegistry;
 import com.flipkart.gap.usl.core.model.event.ExternalEvent;
 import com.flipkart.gap.usl.core.model.external.ExternalEventSchema;
+import com.flipkart.gap.usl.core.store.dimension.resilence.DecoratorExecutionException;
+import com.flipkart.gap.usl.core.store.dimension.resilence.ResilenceDecorator;
 import com.flipkart.gap.usl.core.store.event.EventTypeDBWrapper;
 import com.flipkart.gap.usl.core.validator.SchemaValidator;
 import com.google.inject.Inject;
@@ -34,6 +37,9 @@ public class EventIngestorService {
     @Inject
     @Named("eventIngestionConfig")
     private EventIngestionConfig eventIngestionConfig;
+    @Inject
+    private ResilenceDecorator resilenceDecorator;
+    private static final String EVENT_INGESTION_RESILIENCE_CONFIG = "eventIngestionConfig";
 
     /**
      * function to ingest the data to according to relative ingestionType
@@ -43,7 +49,7 @@ public class EventIngestorService {
      * @param ingestionType
      * @return
      */
-    public EventIngestorResponse ingest(ObjectNode payload, String eventName, IngestionType ingestionType){
+    public EventIngestorResponse ingest(ObjectNode payload, String eventName, IngestionType ingestionType) {
         ExternalEvent externalEvent;
         try {
             externalEvent = eventTypeDBWrapper.getExternalEvent(eventName);
@@ -56,9 +62,9 @@ public class EventIngestorService {
             if (SchemaValidator.getInstance().schemaApply(payload, externalEvent.getValidations())) {
                 switch (ingestionType) {
                     case Sync:
-                        return SyncEventIngestion(payload, eventName);
+                        return syncEventIngestion(payload, eventName);
                     case Async:
-                        return KafkaEventIngestion(payload, eventName);
+                        return kafkaEventIngestion(payload, eventName);
                     default:
                         log.error("Method not yet implemented");
                         return EventIngestorResponse.INGESTION_FAILURE;
@@ -82,22 +88,29 @@ public class EventIngestorService {
      * @param eventName
      * @return
      */
-    private EventIngestorResponse KafkaEventIngestion(ObjectNode payload, String eventName) {
+    private EventIngestorResponse kafkaEventIngestion(ObjectNode payload, String eventName) {
         try {
-            KafkaEventRequest kafkaEventRequest = new KafkaEventRequest(new ProducerEvent(eventName, payload), eventIngestionConfig.getKafkaTopicName());
-            kafkaProducerClient.sendEvent(kafkaEventRequest, ((metadata, exception) -> {
-                // if failed due to APIException try making sync call and if still fails log and send to hyperion
-                if (exception != null) {
-                    try {
-                        kafkaProducerClient.sendEventSync(kafkaEventRequest);
-                    } catch (Throwable t) {
-                        markAPIFailureMeters(eventName);
-                        log.error("Event failed to ingest due to ApiException. Event : {}, Payload {}", eventName, payload, exception);
-                    }
+            resilenceDecorator.execute(EventIngestorService.EVENT_INGESTION_RESILIENCE_CONFIG, () -> {
+                KafkaEventRequest kafkaEventRequest = new KafkaEventRequest(new ProducerEvent(eventName, payload), eventIngestionConfig.getKafkaTopicName());
+                try {
+                    kafkaProducerClient.sendEvent(kafkaEventRequest, ((metadata, exception) -> {
+                        // if failed due to APIException try making sync call and if still fails log it.
+                        if (exception != null) {
+                            try {
+                                kafkaProducerClient.sendEventSync(kafkaEventRequest);
+                            } catch (Throwable t) {
+                                markAPIFailureMeters(eventName);
+                                log.error("Event failed to ingest due to ApiException. Event : {}, Payload {}", eventName, payload, exception);
+                            }
+                        }
+                    }));
+                    return true;
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
                 }
-            }));
-        } catch (Throwable t) {
-            log.error("Event failed to ingest into kafka {}", payload, t);
+            });
+        } catch (DecoratorExecutionException e) {
+            log.error("Event failed to ingest into kafka {}", payload, e);
             markFailureMeters(eventName);
             return EventIngestorResponse.INGESTION_FAILURE;
         }
@@ -112,15 +125,14 @@ public class EventIngestorService {
      * @param eventName
      * @return
      */
-    private EventIngestorResponse SyncEventIngestion(ObjectNode payload, String eventName){
+    private EventIngestorResponse syncEventIngestion(ObjectNode payload, String eventName) {
         try {
             ExternalEventSchema event = new ExternalEventSchema();
             event.setName(eventName);
             event.setPayload(payload);
             // Ignoring stage data as not needed here
             syncEventProcessorService.processEventAndGetStageData(event);
-        }
-        catch(Throwable t){
+        } catch (Throwable t) {
             log.error("Unable to process and store the payload {}", payload, t);
             markFailureMeters(eventName);
             return EventIngestorResponse.INGESTION_FAILURE;

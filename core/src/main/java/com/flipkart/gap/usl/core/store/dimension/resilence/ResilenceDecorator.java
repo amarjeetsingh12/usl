@@ -1,9 +1,9 @@
 package com.flipkart.gap.usl.core.store.dimension.resilence;
 
-import com.flipkart.gap.usl.core.config.resilience.ApplicationResilienceConfig;
 import com.flipkart.gap.usl.core.config.resilience.ResilienceConfig;
 import com.flipkart.gap.usl.core.metric.JmxReporterMetricRegistry;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import io.github.resilience4j.bulkhead.Bulkhead;
 import io.github.resilience4j.bulkhead.BulkheadConfig;
 import io.github.resilience4j.bulkhead.BulkheadRegistry;
@@ -21,23 +21,21 @@ import io.vavr.control.Try;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.function.Supplier;
 
 @Slf4j
 public class ResilenceDecorator {
     @Inject
-    private ApplicationResilienceConfig applicationResilienceConfig;
+    @Named("applicationResilienceConfig")
+    private Map<String, ResilienceConfig> applicationResilienceConfig;
     private final ConcurrentHashMap<String, CircuitBreaker> circuitBreakerMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Bulkhead> bulkheadMap = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, RateLimiter> rateLimiterMap = new ConcurrentHashMap<>();
     private final CircuitBreakerRegistry circuitBreakerRegistry = CircuitBreakerRegistry.ofDefaults();
     private final BulkheadRegistry bulkheadRegistry = BulkheadRegistry.ofDefaults();
     private final RateLimiterRegistry rateLimiterRegistry = RateLimiterRegistry.ofDefaults();
-    public static final String DIMENSION_READ_SERVICE = "dimensionRead";
-    public static final String DIMENSION_BULK_READ_SERVICE = "dimensionBulkRead";
-    public static final String DIMENSION_BULK_SAVE_SERVICE = "dimensionBulkSave";
-    public static final String DIMENSION_DELETE_SERVICE = "dimensionDelete";
     public static final ResilienceConfig DEFAULT_CONFIG = new ResilienceConfig();
 
     @Inject
@@ -45,18 +43,7 @@ public class ResilenceDecorator {
     }
 
     private ResilienceConfig getConfig(String serviceName) {
-        switch (serviceName) {
-            case DIMENSION_READ_SERVICE:
-                return applicationResilienceConfig.getDimensionReadConfig();
-            case DIMENSION_BULK_READ_SERVICE:
-                return applicationResilienceConfig.getDimensionBulkReadConfig();
-            case DIMENSION_BULK_SAVE_SERVICE:
-                return applicationResilienceConfig.getDimensionBulkSaveConfig();
-            case DIMENSION_DELETE_SERVICE:
-                return applicationResilienceConfig.getDimensionDeleteConfig();
-            default:
-                return DEFAULT_CONFIG;
-        }
+        return applicationResilienceConfig.getOrDefault(serviceName, DEFAULT_CONFIG);
     }
 
     private CircuitBreaker getCircuitBreaker(String serviceName) {

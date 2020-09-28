@@ -1,6 +1,6 @@
 package com.flipkart.gap.usl.core.config;
 
-import com.flipkart.gap.usl.core.config.resilience.ApplicationResilienceConfig;
+import com.flipkart.gap.usl.core.config.resilience.ResilienceConfig;
 import com.flipkart.gap.usl.core.store.dimension.DimensionStoreDAO;
 import com.flipkart.gap.usl.core.store.dimension.hbase.HBaseDimensionStoreDAO;
 import com.flipkart.gap.usl.core.store.event.EventMappingStore;
@@ -10,11 +10,14 @@ import com.flipkart.gap.usl.core.store.event.mongo.MongoEventStore;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import com.google.inject.TypeLiteral;
 import com.google.inject.name.Names;
 
 import com.flipkart.gap.usl.core.config.v2.ApplicationConfiguration;
 import com.flipkart.gap.usl.core.processor.SyncEventProcessor;
 import com.flipkart.gap.usl.core.processor.impl.SyncEventProcessorImpl;
+
+import java.util.Map;
 
 /**
  * Created by amarjeet.singh on 21/11/16.
@@ -45,7 +48,7 @@ public class ConfigurationModule extends AbstractModule {
         bind(DimensionStoreDAO.class).to(HBaseDimensionStoreDAO.class);
         bind(CacheConfig.class).annotatedWith(Names.named("cacheConfig")).toInstance(configuration.getCacheConfig());
         bind(EventProcessorConfig.class).annotatedWith(Names.named("eventProcessorConfig")).toInstance(configuration.getEventProcessorConfig());
-        bind(ApplicationResilienceConfig.class).toInstance(configuration.getApplicationResilienceConfig());
+        bind(new TypeLiteral<Map<String, ResilienceConfig>>(){}).annotatedWith(Names.named("applicationResilienceConfig")).toInstance(configuration.getApplicationResilienceConfig());
         bind(ApplicationConfiguration.class).toInstance(configuration);
         bind(String.class).annotatedWith(Names.named("dimensionPackage")).toInstance(configuration.getDimensionPackage());
         bind(SyncEventProcessor.class).to(SyncEventProcessorImpl.class);

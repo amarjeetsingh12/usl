@@ -54,6 +54,24 @@ coreConfig:
         timeoutDuration: 500
       timeLimiterConfig:
         timeoutDuration: 500
+    eventIngestionConfig:
+      bulkheadConfig:
+        maxConcurrentCalls: 100
+        maxWaitDuration: 500
+      circuitBreakerConfig:
+        waitDurationInOpenState: 10000
+        minimumNumberOfCalls: 100
+        slidingWindowSize: 100
+        permittedNumberOfCallsInHalfOpenState: 100
+        slowCallDurationThreshold: 300
+        slowCallRateThreshold: 100
+        failureRateThreshold: 50
+      rateLimiterConfig:
+        limitRefreshPeriod: 1000
+        limitForPeriod: 1000
+        timeoutDuration: 200
+      timeLimiterConfig:
+        timeoutDuration: 500
     dimensionBulkReadConfig:
       bulkheadConfig:
         maxConcurrentCalls: 100

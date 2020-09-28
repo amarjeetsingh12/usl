@@ -28,7 +28,7 @@ public class EventIngestorResource {
     public Response ingestEvent(@NotNull @PathParam("eventName") String eventName,
                                 @NotNull ObjectNode payload) {
         EventIngestorResponse response = eventIngestorService.ingest(payload, eventName, IngestionType.Async);
-        return Response.status(response.getStatusCode()).entity(response.getMessage()).build();
+        return Response.status(response.getStatusCode()).entity(response).build();
     }
 
     /**

@@ -6,10 +6,11 @@ import com.flipkart.gap.usl.core.config.CacheConfig;
 import com.flipkart.gap.usl.core.config.EventProcessorConfig;
 import com.flipkart.gap.usl.core.config.HbaseConfig;
 import com.flipkart.gap.usl.core.config.MongoConfig;
-import com.flipkart.gap.usl.core.config.resilience.ApplicationResilienceConfig;
+import com.flipkart.gap.usl.core.config.resilience.ResilienceConfig;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * Created by piyush.chhabra on 25/03/2019
@@ -17,7 +18,7 @@ import java.io.Serializable;
 @Data
 public class ApplicationConfiguration implements Serializable {
     private EventProcessorConfig eventProcessorConfig;
-    private ApplicationResilienceConfig applicationResilienceConfig;
+    private Map<String,ResilienceConfig> applicationResilienceConfig;
     private String dimensionPackage;
     private CacheConfig cacheConfig;
     private MongoConfig mongoConfig;
@@ -26,7 +27,7 @@ public class ApplicationConfiguration implements Serializable {
     @JsonCreator
     public ApplicationConfiguration(
             @JsonProperty("eventProcessorConfig") EventProcessorConfig eventProcessorConfig,
-            @JsonProperty("applicationResilienceConfig") ApplicationResilienceConfig applicationResilienceConfig,
+            @JsonProperty("applicationResilienceConfig") Map<String,ResilienceConfig> applicationResilienceConfig,
             @JsonProperty("dimensionPackage") String dimensionPackage,
             @JsonProperty("cacheConfig") CacheConfig cacheConfig,
             @JsonProperty("mongoConfig") MongoConfig mongoConfig,
