@@ -3,6 +3,7 @@ package com.flipkart.gap.usl.container.resource;
 import com.codahale.metrics.annotation.Timed;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.flipkart.gap.usl.container.responseobjects.EventIngestionSuccess;
 import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import javax.validation.constraints.NotNull;
@@ -28,7 +29,7 @@ public class EventIngestorResource {
     public Response ingestEvent(@NotNull @PathParam("eventName") String eventName,
                                 @NotNull ObjectNode payload) {
         EventIngestorResponse response = eventIngestorService.ingest(payload, eventName, IngestionType.Async);
-        return Response.status(response.getStatusCode()).entity(response).build();
+        return Response.status(response.getStatusCode()).entity(new EventIngestionSuccess(response.getMessage())).build();
     }
 
     /**
@@ -44,6 +45,6 @@ public class EventIngestorResource {
     public Response ingestEventSync(@NotNull @PathParam("eventName") String eventName,
                                 @NotNull ObjectNode payload) {
         EventIngestorResponse response = eventIngestorService.ingest(payload, eventName, IngestionType.Sync);
-        return Response.status(response.getStatusCode()).entity(response.getMessage()).build();
+        return Response.status(response.getStatusCode()).entity(new EventIngestionSuccess(response.getMessage())).build();
     }
 }
