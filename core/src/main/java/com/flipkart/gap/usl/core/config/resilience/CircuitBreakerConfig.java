@@ -2,8 +2,10 @@ package com.flipkart.gap.usl.core.config.resilience;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 @Data
-public class CircuitBreakerConfig {
+public class CircuitBreakerConfig implements Serializable {
     private long waitDurationInOpenState = 10_000;
     private int minimumNumberOfCalls = 100;
     private int slidingWindowSize = 100;
