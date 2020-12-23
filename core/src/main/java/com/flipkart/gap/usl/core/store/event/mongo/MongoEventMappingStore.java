@@ -46,7 +46,7 @@ public class MongoEventMappingStore implements EventMappingStore {
     public Map<String, Set<EventMapping>> getActiveEventMappings() {
         Bson activeFilter = Filters.eq(MongoConstants.EVENT_MAPPING.ACTIVE, true);
         Bson sortOrder = Sorts.descending(MongoConstants.EVENT_MAPPING.UPDATED);
-        List<EventMapping> eventMappings = mongoDAO.find(dbName, MAPPING_COLLECTION_NAME, activeFilter, -1, sortOrder, null, EventMapping.class);
+        List<EventMapping> eventMappings = mongoDAO.findAll(dbName, MAPPING_COLLECTION_NAME, activeFilter, 100, sortOrder, null, EventMapping.class);
         return eventMappings.stream()
                 .collect(
                         Collectors.groupingBy(EventMapping::getSourceEventId, mapping(eventMapping -> eventMapping, toSet()))
@@ -62,7 +62,7 @@ public class MongoEventMappingStore implements EventMappingStore {
     public Set<EventMapping> getSourceEvents(String eventId) throws RecordNotFoundException {
         Bson sourceEventFilter = Filters.eq(MongoConstants.EVENT_MAPPING.SOURCE_EVENT_ID, eventId);
         Bson sortOrder = Sorts.descending(MongoConstants.EVENT_MAPPING.UPDATED);
-        List<EventMapping> eventMappings = mongoDAO.find(dbName, MAPPING_COLLECTION_NAME, sourceEventFilter, -1, sortOrder, null, EventMapping.class);
+        List<EventMapping> eventMappings = mongoDAO.findAll(dbName, MAPPING_COLLECTION_NAME, sourceEventFilter, 100, sortOrder, null, EventMapping.class);
         return new HashSet<>(eventMappings);
     }
 
@@ -73,7 +73,7 @@ public class MongoEventMappingStore implements EventMappingStore {
                 Filters.eq(MongoConstants.EVENT_MAPPING.ACTIVE, true)
         );
         Bson sortOrder = Sorts.descending(MongoConstants.EVENT_MAPPING.UPDATED);
-        List<EventMapping> eventMappings = mongoDAO.find(dbName, MAPPING_COLLECTION_NAME, sourceEventFilter, -1, sortOrder, null, EventMapping.class);
+        List<EventMapping> eventMappings = mongoDAO.findAll(dbName, MAPPING_COLLECTION_NAME, sourceEventFilter, 100, sortOrder, null, EventMapping.class);
         return new HashSet<>(eventMappings);
     }
 
@@ -81,7 +81,7 @@ public class MongoEventMappingStore implements EventMappingStore {
     public Set<EventMapping> getDimensionUpdateEvents(String eventId) throws RecordNotFoundException {
         Bson sourceEventFilter = Filters.eq(MongoConstants.EVENT_MAPPING.DIMENSION_UPDATE_EVENT, eventId);
         Bson sortOrder = Sorts.descending(MongoConstants.EVENT_MAPPING.UPDATED);
-        List<EventMapping> eventMappings = mongoDAO.find(dbName, MAPPING_COLLECTION_NAME, sourceEventFilter, -1, sortOrder, null, EventMapping.class);
+        List<EventMapping> eventMappings = mongoDAO.findAll(dbName, MAPPING_COLLECTION_NAME, sourceEventFilter, 100, sortOrder, null, EventMapping.class);
         return new HashSet<>(eventMappings);
     }
 

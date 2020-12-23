@@ -55,7 +55,7 @@ public class MongoEventStore implements EventTypeStore {
     @Override
     public Map<String, ExternalEvent> getAll() throws RecordNotFoundException, IOException {
         Bson sortOrder = Sorts.descending(MongoConstants.EVENT_MAPPING.UPDATED);
-        List<ExternalEvent> events = mongoDAO.find(dbName, EVENT_COLLECTION_NAME, new BsonDocument(), -1, sortOrder, null, ExternalEvent.class);
+        List<ExternalEvent> events = mongoDAO.findAll(dbName, EVENT_COLLECTION_NAME, new BsonDocument(), 100, sortOrder, null, ExternalEvent.class);
         return events.stream()
                 .collect(Collectors.toMap(ExternalEvent::getEventId, event -> event));
     }

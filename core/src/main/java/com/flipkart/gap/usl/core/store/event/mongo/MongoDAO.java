@@ -45,8 +45,7 @@ public class MongoDAO {
                     .writeConcern(WriteConcern.MAJORITY)
                     .requiredReplicaSetName(mongoConfig.getReplicaSet())
                     .build());
-        }
-        else {
+        } else {
             this.mongoClient = new MongoClient(serverAddresses, MongoClientOptions.builder()
                     .connectTimeout(mongoConfig.getConnectionTimeout())
                     .socketTimeout(mongoConfig.getRequestTimeout())
@@ -97,6 +96,20 @@ public class MongoDAO {
         return collection.countDocuments(filter);
     }
 
+    public <T> List<T> findAll(String db, String coll, Bson filter, int batchSize, Bson sort, Bson projection, Class<T> clazz) {
+        int start = 0;
+        boolean hasMore = true;
+        List<T> finalList = new ArrayList<>();
+        while (hasMore) {
+            List<T> currentBatch = find(db, coll, filter, batchSize, start, sort, projection, clazz);
+            hasMore = currentBatch != null && currentBatch.size() < batchSize;
+            if (currentBatch != null) {
+                finalList.addAll(currentBatch);
+            }
+        }
+        return finalList;
+    }
+
     public <T> List<T> find(String db, String coll, Bson filter, int limit, Bson sort, Bson projection, Class<T> clazz) {
         return find(db, coll, filter, limit, 0, sort, projection, clazz);
     }
@@ -109,7 +122,7 @@ public class MongoDAO {
             findIterable = findIterable.limit(limit);
         }
         if (sort != null) {
-            findIterable = findIterable.sort(sort).batchSize(limit);
+            findIterable = findIterable.sort(sort);
         }
         if (projection != null) {
             findIterable = findIterable.projection(projection);
@@ -157,6 +170,7 @@ public class MongoDAO {
         UpdateResult updateResult = collection.replaceOne(filter, updatedDocument, new ReplaceOptions().upsert(false));
         return updateResult.getModifiedCount();
     }
+
     public long delete(String db, String coll, Bson filter) {
         MongoDatabase database = this.mongoClient.getDatabase(db);
         MongoCollection<Document> collection = database.getCollection(coll);
