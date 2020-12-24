@@ -55,6 +55,20 @@ public class RetrievalService {
         }
     }
 
+    public Collection<Dimension> getDimensionForEntityList(String dimensionName, List<String> entityIdList) throws ServingLayerException {
+        validateRequest(Collections.singletonList(dimensionName));
+        try {
+            Set<DimensionDBRequest> dimensionReadDBRequests = entityIdList.stream()
+                    .map(entityId -> new DimensionDBRequest(dimensionRegistry.getDimensionClass(dimensionName),
+                            entityId, Constants.DIMENSION_VERSION)).collect(Collectors.toSet());
+
+            return dimensionStoreDAO.bulkGet(dimensionReadDBRequests).values();
+        } catch (DimensionFetchException e) {
+            log.error("Exception in bulk entityList fetch {}", entityIdList, e);
+            throw new InternalException(e.getMessage());
+        }
+    }
+
     private void validateRequest(List<String> dimensions) throws ServingLayerException {
         if (dimensions.stream().anyMatch(d -> !dimensionRegistry.containsDimensionClass(d))) {
             throw new InvalidRequestException(String.format("Invalid dimensions in request.Dimensions: %s", dimensions.toString()));

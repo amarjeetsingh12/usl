@@ -80,4 +80,23 @@ public class RetrievalResource {
         }
     }
 
+    @POST
+    @Timed
+    @Path("/dimension/{dimensionName}")
+    @ApiOperation("To fetch the response of the Dimension list")
+    @ApiResponses(value = {@ApiResponse(code = HttpStatus.SC_NO_CONTENT, message = "Dimension not exists for the given entity")})
+    public Response getDimensionForEntityList(@NotNull @PathParam("dimensionName") String dimensionName,
+                                              @NotNull List<String> entityIdList) {
+        try {
+            Collection<Dimension> dimensions = retrievalService.getDimensionForEntityList(dimensionName, entityIdList);
+            if (CollectionUtils.isEmpty(dimensions)) {
+                return Response.status(HttpStatus.SC_NOT_FOUND).entity(new DimensionNotFoundResponse(entityIdList, dimensionName)).build();
+            } else {
+                return Response.status(HttpStatus.SC_OK).entity(dimensions).build();
+            }
+        } catch (ServingLayerException e) {
+            return Response.status(e.getHttpStatus()).entity(new ErrorResponse(e.getMessage())).build();
+        }
+    }
+
 }
