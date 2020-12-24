@@ -19,7 +19,7 @@ public class ListRetentionPolicyVisitor<K extends DimensionCollection.DimensionE
     public void visit(SizeNTimeBasedRetentionPolicy policy, List<K> elements) {
         if (elements != null) {
             sizeBasedRemoval(policy.getSizeLimit(), elements);
-            timeBaseRemoval(policy.getLimitInDays(), elements);
+            timeBaseRemoval(policy.getLimitInMinutes(), elements);
         }
     }
 
@@ -33,7 +33,7 @@ public class ListRetentionPolicyVisitor<K extends DimensionCollection.DimensionE
     @Override
     public void visit(TimeBasedRetentionPolicy policy, List<K> elements) {
         if (elements != null) {
-            timeBaseRemoval(policy.getLimitInDays(), elements);
+            timeBaseRemoval(policy.getLimitInMinutes(), elements);
         }
     }
 
@@ -50,8 +50,8 @@ public class ListRetentionPolicyVisitor<K extends DimensionCollection.DimensionE
         }
     }
 
-    private void timeBaseRemoval(int limitInDays, List<K> elements) {
-        elements.removeIf(element -> RetentionPolicyHelper.isTimeLimitExceeded(limitInDays, element));
+    private void timeBaseRemoval(int limitInMinutes, List<K> elements) {
+        elements.removeIf(element -> RetentionPolicyHelper.isTimeLimitExceeded(limitInMinutes, element));
     }
 
 

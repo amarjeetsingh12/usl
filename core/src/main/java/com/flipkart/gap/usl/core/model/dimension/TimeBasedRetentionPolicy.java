@@ -10,11 +10,11 @@ import lombok.Setter;
 @Getter
 @Setter
 public class TimeBasedRetentionPolicy extends DimensionRetentionPolicy {
-    private int limitInDays;
+    private int limitInMinutes;
 
-    public TimeBasedRetentionPolicy(int limitInDays) {
+    public TimeBasedRetentionPolicy(int limitInMinutes) {
         super(RetentionPolicyType.TIME_BASED);
-        this.limitInDays = limitInDays;
+        this.limitInMinutes = limitInMinutes;
     }
 
     @Override

@@ -26,7 +26,7 @@ public class RetentionPolicyHelper {
         policy.visit(listRetentionPolicyVisitor, list);
     }
 
-    public static <V extends DimensionCollection.DimensionElement> boolean isTimeLimitExceeded(int days, V element) {
-        return element.getUpdated() + TimeUnit.DAYS.toMillis(days) < System.currentTimeMillis();
+    public static <V extends DimensionCollection.DimensionElement> boolean isTimeLimitExceeded(int minutes, V element) {
+        return element.getUpdated() + TimeUnit.MINUTES.toMillis(minutes) < System.currentTimeMillis();
     }
 }

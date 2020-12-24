@@ -22,6 +22,7 @@ import com.flipkart.gap.usl.core.validator.SchemaValidator;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import groovy.lang.GroovyShell;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -239,13 +240,9 @@ public class DimensionRegistry {
         /*
             EntityId should be kept separately, not in the mapping.
          */
-        for (String path : eventMapping.getEntityIdPaths()) {
-            JsonNode entityId = data.at(path);
-            if (!entityId.isNull() && !entityId.toString().isEmpty()) {
-                dataNode.set("entityId", entityId);
-                break;
-            }
-        }
+
+        dataNode.set("entityId", getEntityId(eventMapping, data));
+
         Class<? extends DimensionEvent> derivedClass = this.internalEventMap.get(eventMapping.getEventType());
         if (DimensionEvent.class.isAssignableFrom(derivedClass)) {
             DimensionEvent dimensionEvent = mapper.convertValue(dataNode, derivedClass);
@@ -265,5 +262,33 @@ public class DimensionRegistry {
             JmxReporterMetricRegistry.getInstance().markNotDimensionEvent(eventMapping.getSourceEventId(), eventMapping.getEventType());
             throw new IngestionEventMappingException("Event should be of type " + DimensionEvent.class);
         }
+    }
+
+    private JsonNode getEntityId(EventMapping eventMapping, ObjectNode data) throws IngestionEventMappingException{
+        if (eventMapping.getEntityIdPaths() != null)
+            return getEntityIdFromXPath(data, eventMapping.getEntityIdPaths());
+        Optional.ofNullable(eventMapping.getPivot()).orElseThrow(() ->
+                new IngestionEventMappingException("EntityId is missing from Dimension Event {}" + data));
+        return eventMapping.getPivot().getType().equals("xPath") ? getEntityIdFromXPath(data, eventMapping.getPivot().getValue()) :
+                getEntityIdFromGroovy(eventMapping.getPivot().getExpression(), data);
+    }
+
+    private JsonNode getEntityIdFromGroovy(String script, ObjectNode data) {
+        GroovyShell shell = new GroovyShell();
+        shell.setProperty("data", data);
+        String entityId = shell.evaluate(script).toString();
+        ObjectMapper mapper = ObjectMapperFactory.getMapper();
+        data.set("entityIdFromGroovy", mapper.convertValue(entityId, JsonNode.class));
+        return data.at("/entityIdFromGroovy");
+    }
+
+    private JsonNode getEntityIdFromXPath(ObjectNode data, List<String> paths) {
+        for (String path : paths) {
+            JsonNode entityId = data.at(path);
+            if (!entityId.isNull() && !entityId.toString().isEmpty()) {
+                return entityId;
+            }
+        }
+        return null;
     }
 }
