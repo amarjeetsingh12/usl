@@ -13,7 +13,9 @@ public class DimensionProcessStage extends ProcessingStage {
     @Override
     protected void process(ProcessingStageData request) throws StageProcessingException {
         try {
-            request.getDimensionMutateRequests().forEach(dimensionMutateRequest -> batchProcessor.process(dimensionMutateRequest.getDimension(), dimensionMutateRequest.getDimensionEvents()));
+            if (request.getDimensionMutateRequests() != null && request.getDimensionMutateRequests().size() > 0)
+                request.getDimensionMutateRequests().forEach(dimensionMutateRequest
+                        -> batchProcessor.process(dimensionMutateRequest.getDimension(), dimensionMutateRequest.getDimensionEvents()));
         } catch (Throwable throwable) {
             throw new StageProcessingException(throwable);
         }
