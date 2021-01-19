@@ -265,8 +265,9 @@ public class DimensionRegistry {
     }
 
     private JsonNode getEntityId(EventMapping eventMapping, ObjectNode data) throws IngestionEventMappingException{
-        if (eventMapping.getEntityIdPaths() != null)
+        if (eventMapping.getEntityIdPaths() != null) {
             return getEntityIdFromXPath(data, eventMapping.getEntityIdPaths());
+        }
         Optional.ofNullable(eventMapping.getPivot()).orElseThrow(() ->
                 new IngestionEventMappingException("EntityId is missing from Dimension Event {}" + data));
         return eventMapping.getPivot().getType().equals("xPath") ? getEntityIdFromXPath(data, eventMapping.getPivot().getValue()) :
