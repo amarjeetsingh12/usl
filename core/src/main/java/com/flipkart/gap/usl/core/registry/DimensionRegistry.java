@@ -34,6 +34,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Stream;
 
+import static com.flipkart.gap.usl.core.constant.Constants.*;
+
 /**
  * Created by amarjeet.singh on 04/10/16.
  */
@@ -186,7 +188,7 @@ public class DimensionRegistry {
      */
     private void addDimensionEventClassMapping(Class<? extends DimensionEvent> dimensionEventClass, Class<? extends Dimension> dimensionClass, String dimensionName, DimensionEventType eventType) {
         Set<DimensionSpec> dimensionSpecSet = registeredDimensions.computeIfAbsent(dimensionEventClass, k -> new HashSet<>());
-        dimensionSpecSet.add(new DimensionSpec(dimensionClass, dimensionName, Constants.DIMENSION_VERSION));
+        dimensionSpecSet.add(new DimensionSpec(dimensionClass, dimensionName, DIMENSION_VERSION));
         EventSpecs eventSpecs = dimensionEventClass.getAnnotation(EventSpecs.class);
         internalEventMap.put(eventSpecs.name(), dimensionEventClass);
     }
@@ -241,7 +243,7 @@ public class DimensionRegistry {
             EntityId should be kept separately, not in the mapping.
          */
 
-        dataNode.set("entityId", getEntityId(eventMapping, data));
+        dataNode.set(ENTITY_ID, getEntityId(eventMapping, data));
 
         Class<? extends DimensionEvent> derivedClass = this.internalEventMap.get(eventMapping.getEventType());
         if (DimensionEvent.class.isAssignableFrom(derivedClass)) {
@@ -270,7 +272,7 @@ public class DimensionRegistry {
         }
         Optional.ofNullable(eventMapping.getPivot()).orElseThrow(() ->
                 new IngestionEventMappingException("EntityId is missing from Dimension Event {}" + data));
-        return eventMapping.getPivot().getType().equals("xPath") ? getEntityIdFromXPath(data, eventMapping.getPivot().getValue()) :
+        return eventMapping.getPivot().getType().equals(XPATH) ? getEntityIdFromXPath(data, eventMapping.getPivot().getValue()) :
                 getEntityIdFromGroovy(eventMapping.getPivot().getExpression(), data);
     }
 

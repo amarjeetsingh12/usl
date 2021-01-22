@@ -10,12 +10,12 @@ import lombok.Setter;
 @Getter
 @Setter
 public final class SizeNTimeBasedRetentionPolicy extends DimensionRetentionPolicy {
-    private int limitInMinutes;
+    private long limitInMilliseconds;
     private int sizeLimit;
 
-    public SizeNTimeBasedRetentionPolicy(int limitInMinutes, int sizeLimit) {
+    public SizeNTimeBasedRetentionPolicy(long limitInMilliseconds, int sizeLimit) {
         super(RetentionPolicyType.SIZE_N_TIME_BASED);
-        this.limitInMinutes = limitInMinutes;
+        this.limitInMilliseconds = limitInMilliseconds;
         this.sizeLimit = sizeLimit;
     }
 
