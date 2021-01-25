@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.flipkart.gap.usl.core.constant.Constants;
+import com.flipkart.gap.usl.core.helper.GroovyTranslator;
 import com.flipkart.gap.usl.core.helper.ObjectMapperFactory;
 import com.flipkart.gap.usl.core.metric.JmxReporterMetricRegistry;
 import com.flipkart.gap.usl.core.model.EntityDimensionCompositeKey;
@@ -277,9 +278,10 @@ public class DimensionRegistry {
     }
 
     private JsonNode getEntityIdFromGroovy(String script, ObjectNode data) {
-        GroovyShell shell = new GroovyShell();
-        shell.setProperty("data", data);
-        String entityId = shell.evaluate(script).toString();
+//        GroovyTranslator.translate(script, data);
+//        GroovyShell shell = new GroovyShell();
+//        shell.setProperty("data", data);
+        String entityId = GroovyTranslator.translate(script, data).toString();
         ObjectMapper mapper = ObjectMapperFactory.getMapper();
         data.set("entityIdFromGroovy", mapper.convertValue(entityId, JsonNode.class));
         return data.at("/entityIdFromGroovy");
