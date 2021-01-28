@@ -278,9 +278,6 @@ public class DimensionRegistry {
     }
 
     private JsonNode getEntityIdFromGroovy(String script, ObjectNode data) {
-//        GroovyTranslator.translate(script, data);
-//        GroovyShell shell = new GroovyShell();
-//        shell.setProperty("data", data);
         String entityId = GroovyTranslator.translate(script, data).toString();
         ObjectMapper mapper = ObjectMapperFactory.getMapper();
         data.set("entityIdFromGroovy", mapper.convertValue(entityId, JsonNode.class));
