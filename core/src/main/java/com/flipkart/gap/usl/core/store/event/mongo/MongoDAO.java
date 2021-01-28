@@ -102,7 +102,7 @@ public class MongoDAO {
         while (hasMore) {
             List<T> currentBatch = find(db, coll, filter, batchSize, start, sort, projection, clazz);
             hasMore = currentBatch != null && currentBatch.size() == batchSize;
-            if (currentBatch != null && currentBatch.size() > 0) {
+            if (currentBatch != null && !currentBatch.isEmpty()) {
                 finalList.addAll(currentBatch);
                 start += currentBatch.size();
             }
