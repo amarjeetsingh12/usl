@@ -7,7 +7,6 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.client.model.DeleteOptions;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.result.DeleteResult;
@@ -165,9 +164,13 @@ public class MongoDAO {
     }
 
     public long replace(String db, String coll, Bson filter, Document updatedDocument) {
+        return this.replace(db, coll, filter, updatedDocument, false);
+    }
+
+    public long replace(String db, String coll, Bson filter, Document updatedDocument, boolean upsert) {
         MongoDatabase database = this.mongoClient.getDatabase(db);
         MongoCollection<Document> collection = database.getCollection(coll);
-        UpdateResult updateResult = collection.replaceOne(filter, updatedDocument, new ReplaceOptions().upsert(false));
+        UpdateResult updateResult = collection.replaceOne(filter, updatedDocument, new ReplaceOptions().upsert(upsert));
         return updateResult.getModifiedCount();
     }
 
