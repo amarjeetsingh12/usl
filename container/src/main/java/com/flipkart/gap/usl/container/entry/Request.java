@@ -6,5 +6,5 @@ import java.util.List;
 
 @Data
 public class Request {
-    List<String> entityIdList;
+    private List<String> entityIds;
 }
