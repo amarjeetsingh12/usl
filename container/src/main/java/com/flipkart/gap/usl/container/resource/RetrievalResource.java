@@ -88,9 +88,9 @@ public class RetrievalResource {
     @ApiResponses(value = {@ApiResponse(code = HttpStatus.SC_NO_CONTENT, message = "Dimension not exists for the given entity")})
     public Response getDimensionForEntityList(@NotNull @PathParam("dimensionName") String dimensionName, Request request) {
         try {
-            Collection<Dimension> dimensions = retrievalService.getDimensionForEntityList(dimensionName, request.getEntityIdList());
+            Collection<Dimension> dimensions = retrievalService.getDimensionForEntityList(dimensionName, request.getEntityIds());
             if (CollectionUtils.isEmpty(dimensions)) {
-                return Response.status(HttpStatus.SC_NOT_FOUND).entity(new DimensionNotFoundResponse(request.getEntityIdList(), dimensionName)).build();
+                return Response.status(HttpStatus.SC_NOT_FOUND).entity(new DimensionNotFoundResponse(request.getEntityIds(), dimensionName)).build();
             } else {
                 return Response.status(HttpStatus.SC_OK).entity(dimensions).build();
             }
