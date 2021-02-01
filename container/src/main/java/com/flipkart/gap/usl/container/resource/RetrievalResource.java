@@ -30,6 +30,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
+import com.flipkart.gap.usl.container.entry.Request;
 
 /**
  * Created by ankesh.maheshwari on 28/11/16.
@@ -85,12 +86,11 @@ public class RetrievalResource {
     @Path("/dimension/{dimensionName}")
     @ApiOperation("To fetch the response of the Dimension list")
     @ApiResponses(value = {@ApiResponse(code = HttpStatus.SC_NO_CONTENT, message = "Dimension not exists for the given entity")})
-    public Response getDimensionForEntityList(@NotNull @PathParam("dimensionName") String dimensionName,
-                                              @NotNull List<String> entityIdList) {
+    public Response getDimensionForEntityList(@NotNull @PathParam("dimensionName") String dimensionName, Request request) {
         try {
-            Collection<Dimension> dimensions = retrievalService.getDimensionForEntityList(dimensionName, entityIdList);
+            Collection<Dimension> dimensions = retrievalService.getDimensionForEntityList(dimensionName, request.getEntityIdList());
             if (CollectionUtils.isEmpty(dimensions)) {
-                return Response.status(HttpStatus.SC_NOT_FOUND).entity(new DimensionNotFoundResponse(entityIdList, dimensionName)).build();
+                return Response.status(HttpStatus.SC_NOT_FOUND).entity(new DimensionNotFoundResponse(request.getEntityIdList(), dimensionName)).build();
             } else {
                 return Response.status(HttpStatus.SC_OK).entity(dimensions).build();
             }
