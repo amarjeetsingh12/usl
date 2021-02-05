@@ -92,7 +92,7 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
                     throw new RuntimeException(e);
                 }
             });
-        } catch (DecoratorExecutionException e) {
+        } catch (Exception e) {
             throw new DimensionFetchException(e);
         }
     }
@@ -141,7 +141,7 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
                 }
                 return responseMap;
             });
-        } catch (DecoratorExecutionException e) {
+        } catch (Exception e) {
             throw new DimensionFetchException(e);
         }
 
@@ -174,7 +174,7 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
                     throw new RuntimeException("Unable to get table", e);
                 }
             });
-        } catch (DecoratorExecutionException e) {
+        } catch (Exception e) {
             throw new DimensionPersistException(e);
         }
     }
@@ -193,7 +193,7 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
                     throw new RuntimeException("Unable to get table", e);
                 }
             });
-        } catch (DecoratorExecutionException e) {
+        } catch (Exception e) {
             throw new DimensionDeleteException(e);
         }
     }
