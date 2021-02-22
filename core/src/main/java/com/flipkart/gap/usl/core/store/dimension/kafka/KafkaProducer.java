@@ -3,26 +3,23 @@ package com.flipkart.gap.usl.core.store.dimension.kafka;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.flipkart.gap.usl.core.config.EventProcessorConfig;
 import com.flipkart.gap.usl.core.helper.ObjectMapperFactory;
-import com.flipkart.gap.usl.core.model.dimension.Dimension;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import lombok.Getter;
-
-import org.apache.kafka.clients.producer.Producer;
-import org.apache.kafka.clients.producer.ProducerConfig;
-import org.apache.kafka.clients.producer.ProducerRecord;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 
-import java.util.Iterator;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
+/**
+ * Created by vinay.lodha on 20/06/17.
+ */
+@Slf4j
 @Singleton
-public class KafkaPublisherDAO {
-
-    private final Integer KAFKA_MESSAGE_BATCH_SIZE_MAX = 100;
-    private final Integer KAFKA_LINGER_SIZE_MS = 10;
+public class KafkaProducer {
 
     @Inject
     @Named("eventProcessorConfig")
@@ -31,9 +28,9 @@ public class KafkaPublisherDAO {
     private ProducerConfig producerConfig;
     private Producer<String, byte[]> producer;
 
-    @Inject
-    public void init(ProducerConfig producerConfig) {
+    public KafkaProducer(ProducerConfig producerConfig) {
         this.producerConfig = producerConfig;
+        int maxBytesInBuffer = 1024 * 1024 * 100;
         Properties props = new Properties();
         props.put("bootstrap.servers", eventProcessorConfig.getKafkaBrokerConnection());
         props.put("key.deserializer", ByteArrayDeserializer.class);
@@ -46,32 +43,9 @@ public class KafkaPublisherDAO {
         props.put("heartbeat.interval.ms", eventProcessorConfig.getKafkaConfig().getHeartBeatIntervalMS());
         props.put("session.timeout.ms", eventProcessorConfig.getKafkaConfig().getSessionTimeoutMS());
         props.put("request.timeout.ms", eventProcessorConfig.getKafkaConfig().getRequestTimeoutMS());
-        props.put("batch.size", KAFKA_MESSAGE_BATCH_SIZE_MAX);
-        props.put("linger.ms", KAFKA_LINGER_SIZE_MS);
 
         producer = new org.apache.kafka.clients.producer.KafkaProducer<String, byte[]>(props);
     }
 
-
-    private void sendEvent(Dimension dimension) throws Exception {
-        producer.send(createProducerRecord(dimension)).get();
-    }
-
-    private ProducerRecord<String,byte[]> createProducerRecord(Dimension dimension) throws JsonProcessingException {
-
-        return new ProducerRecord<>(dimension.getDimensionSpecs().name(),
-                ObjectMapperFactory.getMapper().writeValueAsBytes(dimension)
-        );
-    }
-
-    public void bulkPublish(Set<Dimension> dimensions) throws Exception {
-        
-        Iterator<Dimension> dimensionIterator = dimensions.iterator();
-        while (dimensionIterator.hasNext()) {
-            sendEvent(dimensionIterator.next());
-        }
-
-    }
-
-
 }
+
