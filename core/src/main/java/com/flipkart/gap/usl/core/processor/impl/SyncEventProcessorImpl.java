@@ -11,6 +11,7 @@ import com.flipkart.gap.usl.core.processor.SyncEventProcessor;
 import com.flipkart.gap.usl.core.processor.exception.ProcessingException;
 import com.flipkart.gap.usl.core.processor.stage.DimensionFetchStage;
 import com.flipkart.gap.usl.core.processor.stage.DimensionProcessStage;
+import com.flipkart.gap.usl.core.processor.stage.DimensionPublishStage;
 import com.flipkart.gap.usl.core.processor.stage.DimensionSaveStage;
 import com.flipkart.gap.usl.core.processor.stage.StageProcessingException;
 import com.flipkart.gap.usl.core.processor.stage.model.ProcessingStageData;
@@ -38,6 +39,9 @@ public class SyncEventProcessorImpl implements SyncEventProcessor {
 
     @Inject
     private DimensionSaveStage dimensionSaveStage;
+
+    @Inject
+    private DimensionPublishStage dimensionPublishStage;
 
     @Inject
     private ExternalEventHelper externalEventHelper;

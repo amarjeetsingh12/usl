@@ -14,6 +14,7 @@ import com.flipkart.gap.usl.core.model.InternalEventMeta;
 import com.flipkart.gap.usl.core.processor.exception.ProcessingException;
 import com.flipkart.gap.usl.core.processor.stage.DimensionFetchStage;
 import com.flipkart.gap.usl.core.processor.stage.DimensionProcessStage;
+import com.flipkart.gap.usl.core.processor.stage.DimensionPublishStage;
 import com.flipkart.gap.usl.core.processor.stage.DimensionSaveStage;
 import com.flipkart.gap.usl.core.processor.stage.model.ProcessingStageData;
 import com.google.inject.Inject;
@@ -177,8 +178,15 @@ public class EventStreamProcessor implements Serializable {
                         dimensionSaveStage.execute(dimensionPersistRequest);
                         return dimensionPersistRequest;
                     });
+                    JavaRDD<ProcessingStageData> publishedRDD = persistedRDD.map(dimensionPersistRequest -> {
+                        SparkHelper.bootstrap();
+                        DimensionPublishStage dimensionPublishStage = ConfigurationModule.getInjector(applicationConfiguration).getInstance(DimensionPublishStage.class);
+                        dimensionPublishStage.execute(dimensionPersistRequest);
+                        return dimensionPersistRequest;
+                    });
+
                     try {
-                        log.info("Processed {} records in current batch ", persistedRDD.count());
+                        log.info("Processed {} records in current batch ", publishedRDD.count());
                         internalEventMetaRDD.unpersist();
                         batchedRDD.unpersist();
                     } catch (Throwable throwable) {
