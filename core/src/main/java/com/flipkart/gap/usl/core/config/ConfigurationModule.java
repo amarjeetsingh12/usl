@@ -52,5 +52,6 @@ public class ConfigurationModule extends AbstractModule {
         bind(ApplicationConfiguration.class).toInstance(configuration);
         bind(String.class).annotatedWith(Names.named("dimensionPackage")).toInstance(configuration.getDimensionPackage());
         bind(SyncEventProcessor.class).to(SyncEventProcessorImpl.class);
+        bind(CoreConfig.class).annotatedWith(Names.named("coreConfig")).toInstance(configuration.getCoreConfig());
     }
 }

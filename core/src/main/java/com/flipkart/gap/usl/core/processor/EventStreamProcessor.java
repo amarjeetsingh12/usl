@@ -178,6 +178,8 @@ public class EventStreamProcessor implements Serializable {
                         dimensionSaveStage.execute(dimensionPersistRequest);
                         return dimensionPersistRequest;
                     });
+
+
                     JavaRDD<ProcessingStageData> publishedRDD = persistedRDD.map(dimensionPersistRequest -> {
                         SparkHelper.bootstrap();
                         DimensionPublishStage dimensionPublishStage = ConfigurationModule.getInjector(applicationConfiguration).getInstance(DimensionPublishStage.class);
