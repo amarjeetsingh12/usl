@@ -8,6 +8,7 @@ import com.flipkart.gap.usl.core.exception.DimensionUpdateException;
 import com.flipkart.gap.usl.core.model.dimension.*;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +17,7 @@ import java.util.List;
 @DimensionSpecs(name = "user.payments", updateEvents = UserPaymentEvent.class, enabled = true)
 @Getter
 @Setter
+@Slf4j
 public class UserPaymentOptionsDimension extends DimensionListBased<UserPaymentEntry, UserPaymentEvent, DummyMergeEvent> {
 
 
@@ -28,6 +30,7 @@ public class UserPaymentOptionsDimension extends DimensionListBased<UserPaymentE
         if (this.getElements() == null) {
             this.setElements(new ArrayList<>());
         }
+        log.info("In UserPaymentOptionsDimension");
         events.forEach(event -> this.getElements().add(new UserPaymentEntry(event)));
     }
 
