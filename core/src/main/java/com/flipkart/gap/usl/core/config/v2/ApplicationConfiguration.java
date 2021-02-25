@@ -3,7 +3,7 @@ package com.flipkart.gap.usl.core.config.v2;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.flipkart.gap.usl.core.config.CacheConfig;
-import com.flipkart.gap.usl.core.config.CoreConfig;
+//import com.flipkart.gap.usl.core.config.CoreConfig;
 import com.flipkart.gap.usl.core.config.EventProcessorConfig;
 import com.flipkart.gap.usl.core.config.HbaseConfig;
 import com.flipkart.gap.usl.core.config.MongoConfig;
@@ -24,7 +24,7 @@ public class ApplicationConfiguration implements Serializable {
     private CacheConfig cacheConfig;
     private MongoConfig mongoConfig;
     private HbaseConfig hbaseConfig;
-    private CoreConfig coreConfig;
+//    private CoreConfig coreConfig;
 
     @JsonCreator
     public ApplicationConfiguration(
@@ -33,8 +33,8 @@ public class ApplicationConfiguration implements Serializable {
             @JsonProperty("dimensionPackage") String dimensionPackage,
             @JsonProperty("cacheConfig") CacheConfig cacheConfig,
             @JsonProperty("mongoConfig") MongoConfig mongoConfig,
-            @JsonProperty("hbaseConfig") HbaseConfig hbaseConfig,
-            @JsonProperty("coreConfig") CoreConfig coreConfig
+            @JsonProperty("hbaseConfig") HbaseConfig hbaseConfig
+//            @JsonProperty("coreConfig") CoreConfig coreConfig
     ) {
         this.eventProcessorConfig = eventProcessorConfig;
         this.dimensionPackage = dimensionPackage;
@@ -42,7 +42,7 @@ public class ApplicationConfiguration implements Serializable {
         this.mongoConfig = mongoConfig;
         this.hbaseConfig = hbaseConfig;
         this.applicationResilienceConfig = applicationResilienceConfig;
-        this.coreConfig = coreConfig;
+//        this.coreConfig = coreConfig;
         this.validate();
     }
 

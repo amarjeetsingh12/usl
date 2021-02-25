@@ -61,6 +61,7 @@ public class SyncEventProcessorImpl implements SyncEventProcessor {
             dimensionFetchStage.execute(processingStageData);
             dimensionProcessStage.execute(processingStageData);
             dimensionSaveStage.execute(processingStageData);
+            dimensionPublishStage.execute(processingStageData);
 
             return processingStageData;
         } catch (StageProcessingException | ExecutionException throwable) {

@@ -28,8 +28,6 @@ public class EventProcessorConfig implements Serializable {
     @NotBlank
     private String topicName;
 
-    private Map<String, String> dimensionKafkaTopic;
-
     @NotBlank
     private String kafkaBrokerConnection;
     private String backPressureInitialRate = "20000";
