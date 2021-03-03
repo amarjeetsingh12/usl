@@ -8,6 +8,7 @@ import com.flipkart.gap.usl.core.model.dimension.TimeBasedRetentionPolicy;
 import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -19,7 +20,7 @@ public class ListRetentionPolicyVisitor<K extends DimensionCollection.DimensionE
     public void visit(SizeNTimeBasedRetentionPolicy policy, List<K> elements) {
         if (elements != null) {
             sizeBasedRemoval(policy.getSizeLimit(), elements);
-            timeBaseRemoval(policy.getLimitInMilliseconds(), elements);
+            timeBaseRemoval(policy.getTimeUnit().toMillis(policy.getDuration()), elements);
         }
     }
 
@@ -50,8 +51,8 @@ public class ListRetentionPolicyVisitor<K extends DimensionCollection.DimensionE
         }
     }
 
-    private void timeBaseRemoval(long limitInMilliseconds, List<K> elements) {
-        elements.removeIf(element -> RetentionPolicyHelper.isTimeLimitExceeded(limitInMilliseconds, element));
+    private void timeBaseRemoval(long millis, List<K> elements) {
+        elements.removeIf(element -> RetentionPolicyHelper.isTimeLimitExceeded(millis, element));
     }
 
 
