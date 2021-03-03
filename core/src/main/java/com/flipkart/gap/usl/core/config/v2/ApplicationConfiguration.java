@@ -11,6 +11,7 @@ import com.flipkart.gap.usl.core.config.resilience.ResilienceConfig;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,6 +27,7 @@ public class ApplicationConfiguration implements Serializable {
     private CacheConfig cacheConfig;
     private MongoConfig mongoConfig;
     private HbaseConfig hbaseConfig;
+    private List<String> dimensionsToBePublished;
 
     @JsonCreator
     public ApplicationConfiguration(
@@ -34,7 +36,8 @@ public class ApplicationConfiguration implements Serializable {
             @JsonProperty("dimensionPackage") String dimensionPackage,
             @JsonProperty("cacheConfig") CacheConfig cacheConfig,
             @JsonProperty("mongoConfig") MongoConfig mongoConfig,
-            @JsonProperty("hbaseConfig") HbaseConfig hbaseConfig
+            @JsonProperty("hbaseConfig") HbaseConfig hbaseConfig,
+            @JsonProperty("dimensionsToBePublished") List<String> dimensionsToBePublished
     ) {
         this.eventProcessorConfig = eventProcessorConfig;
         this.dimensionPackage = dimensionPackage;
@@ -42,6 +45,7 @@ public class ApplicationConfiguration implements Serializable {
         this.mongoConfig = mongoConfig;
         this.hbaseConfig = hbaseConfig;
         this.applicationResilienceConfig = applicationResilienceConfig;
+        this.dimensionsToBePublished = dimensionsToBePublished;
         this.validate();
     }
 

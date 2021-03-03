@@ -1,6 +1,7 @@
 package com.flipkart.gap.usl.core.processor.stage;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.flipkart.gap.usl.core.config.v2.ApplicationConfiguration;
 import com.flipkart.gap.usl.core.helper.ObjectMapperFactory;
 import com.flipkart.gap.usl.core.model.DimensionMutateRequest;
 import com.flipkart.gap.usl.core.model.dimension.Dimension;
@@ -22,6 +23,9 @@ public class DimensionPublishStage extends ProcessingStage {
     @Inject
     private KafkaPublisherDao kafkaPublisherDao;
 
+    @Inject
+    ApplicationConfiguration configuration;
+
     @Override
     protected void process(ProcessingStageData processingStageData) throws StageProcessingException {
         try {
@@ -31,7 +35,9 @@ public class DimensionPublishStage extends ProcessingStage {
             Iterator<Dimension> dimensionIterator = dimensionSet.iterator();
             while (dimensionIterator.hasNext()) {
                 Dimension dimension = dimensionIterator.next();
-                kafkaPublisherDao.publish(dimension.getDimensionSpecs().name(),
+
+                if (configuration.getDimensionsToBePublished().contains(dimension.getDimensionSpecs().name()))
+                    kafkaPublisherDao.publish(dimension.getDimensionSpecs().name(),
                         ObjectMapperFactory.getMapper().writeValueAsBytes(dimension));
             }
 
