@@ -13,13 +13,13 @@ import com.flipkart.gap.usl.core.model.dimension.TimeBasedRetentionPolicy;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class MapRetentionPolicyVisitor<K,V extends DimensionCollection.DimensionElement> implements RetentionPolicyVisitor<Map<K,V>>{
+public class MapRetentionPolicyVisitor<K, V extends DimensionCollection.DimensionElement> implements RetentionPolicyVisitor<Map<K, V>> {
 
     @Override
     public void visit(SizeNTimeBasedRetentionPolicy policy, Map<K, V> elements) {
         if (elements != null) {
             sizeBasedRemoval(policy.getSizeLimit(), elements);
-            timeBaseRemoval(policy.getLimitInMilliseconds(), elements);
+            timeBaseRemoval(policy.getTimeUnit().toMillis(policy.getDuration()), elements);
         }
     }
 
@@ -56,7 +56,7 @@ public class MapRetentionPolicyVisitor<K,V extends DimensionCollection.Dimension
     private List<K> getKeysToRemove(int sizeLimit, List<Map.Entry<K, V>> sortedEntries) {
         int entriesToRemoves = sortedEntries.size() - sizeLimit;
         List<K> keysToRemove = new ArrayList<>();
-        for (Map.Entry<K,V> entry : sortedEntries) {
+        for (Map.Entry<K, V> entry : sortedEntries) {
             if (keysToRemove.size() < entriesToRemoves) {
                 // size based remove
                 keysToRemove.add(entry.getKey());
