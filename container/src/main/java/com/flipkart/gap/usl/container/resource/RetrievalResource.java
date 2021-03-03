@@ -30,6 +30,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
+import com.flipkart.gap.usl.container.entry.Request;
 
 /**
  * Created by ankesh.maheshwari on 28/11/16.
@@ -72,6 +73,24 @@ public class RetrievalResource {
             Collection<Dimension> dimensions = retrievalService.getDimensionsListForEntity(entityId, dimensionsToFetch);
             if (CollectionUtils.isEmpty(dimensions)) {
                 return Response.status(HttpStatus.SC_NOT_FOUND).entity(new DimensionNotFoundResponse(entityId, dimensionsToFetch)).build();
+            } else {
+                return Response.status(HttpStatus.SC_OK).entity(dimensions).build();
+            }
+        } catch (ServingLayerException e) {
+            return Response.status(e.getHttpStatus()).entity(new ErrorResponse(e.getMessage())).build();
+        }
+    }
+
+    @POST
+    @Timed
+    @Path("/dimension/{dimensionName}")
+    @ApiOperation("To fetch the response of the Dimension list")
+    @ApiResponses(value = {@ApiResponse(code = HttpStatus.SC_NO_CONTENT, message = "Dimension not exists for the given entity")})
+    public Response getDimensionForEntityList(@NotNull @PathParam("dimensionName") String dimensionName, Request request) {
+        try {
+            Collection<Dimension> dimensions = retrievalService.getDimensionForEntityList(dimensionName, request.getEntityIds());
+            if (CollectionUtils.isEmpty(dimensions)) {
+                return Response.status(HttpStatus.SC_NOT_FOUND).entity(new DimensionNotFoundResponse(request.getEntityIds(), dimensionName)).build();
             } else {
                 return Response.status(HttpStatus.SC_OK).entity(dimensions).build();
             }

@@ -16,7 +16,7 @@
     </modules>
 
     <properties>
-        <revision>0.0.1-SNAPSHOT</revision>
+        <revision>0.0.5</revision>
         <powermock.version>1.6.6</powermock.version>
         <guice.version>3.0</guice.version>
         <jacoco.version>0.7.1.201405082137</jacoco.version>

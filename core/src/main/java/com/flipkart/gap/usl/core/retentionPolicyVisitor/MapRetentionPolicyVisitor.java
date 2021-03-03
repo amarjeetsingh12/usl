@@ -19,7 +19,7 @@ public class MapRetentionPolicyVisitor<K,V extends DimensionCollection.Dimension
     public void visit(SizeNTimeBasedRetentionPolicy policy, Map<K, V> elements) {
         if (elements != null) {
             sizeBasedRemoval(policy.getSizeLimit(), elements);
-            timeBaseRemoval(policy.getLimitInDays(), elements);
+            timeBaseRemoval(policy.getLimitInMilliseconds(), elements);
         }
     }
 
@@ -33,15 +33,15 @@ public class MapRetentionPolicyVisitor<K,V extends DimensionCollection.Dimension
     @Override
     public void visit(TimeBasedRetentionPolicy policy, Map<K, V> elements) {
         if (elements != null) {
-            timeBaseRemoval(policy.getLimitInDays(), elements);
+            timeBaseRemoval(policy.getLimitInMilliseconds(), elements);
         }
     }
 
-    private void timeBaseRemoval(int limitInDays, Map<K, V> elements) {
+    private void timeBaseRemoval(long limitInMilliseconds, Map<K, V> elements) {
         Iterator<Map.Entry<K, V>> iterator = elements.entrySet().iterator();
         while (iterator.hasNext()) {
             V value = iterator.next().getValue();
-            if (RetentionPolicyHelper.isTimeLimitExceeded(limitInDays, value)) {
+            if (RetentionPolicyHelper.isTimeLimitExceeded(limitInMilliseconds, value)) {
                 iterator.remove();
             }
         }

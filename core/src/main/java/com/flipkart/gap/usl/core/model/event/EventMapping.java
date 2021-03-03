@@ -30,8 +30,8 @@ public class EventMapping {
     // optional validations ,send event only if these validations are passed.
     private JsonNode validations;
 
-    @NotNull
     private List<String> entityIdPaths;
+    private Pivot pivot;
     @NotNull
     private boolean active = true;
     private long created;

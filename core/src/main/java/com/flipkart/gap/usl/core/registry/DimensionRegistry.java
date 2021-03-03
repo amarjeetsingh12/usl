@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.flipkart.gap.usl.core.constant.Constants;
+import com.flipkart.gap.usl.core.helper.GroovyTranslator;
 import com.flipkart.gap.usl.core.helper.ObjectMapperFactory;
 import com.flipkart.gap.usl.core.metric.JmxReporterMetricRegistry;
 import com.flipkart.gap.usl.core.model.EntityDimensionCompositeKey;
@@ -22,6 +23,7 @@ import com.flipkart.gap.usl.core.validator.SchemaValidator;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import groovy.lang.GroovyShell;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -32,6 +34,8 @@ import scala.Tuple2;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Stream;
+
+import static com.flipkart.gap.usl.core.constant.Constants.*;
 
 /**
  * Created by amarjeet.singh on 04/10/16.
@@ -185,7 +189,7 @@ public class DimensionRegistry {
      */
     private void addDimensionEventClassMapping(Class<? extends DimensionEvent> dimensionEventClass, Class<? extends Dimension> dimensionClass, String dimensionName, DimensionEventType eventType) {
         Set<DimensionSpec> dimensionSpecSet = registeredDimensions.computeIfAbsent(dimensionEventClass, k -> new HashSet<>());
-        dimensionSpecSet.add(new DimensionSpec(dimensionClass, dimensionName, Constants.DIMENSION_VERSION));
+        dimensionSpecSet.add(new DimensionSpec(dimensionClass, dimensionName, DIMENSION_VERSION));
         EventSpecs eventSpecs = dimensionEventClass.getAnnotation(EventSpecs.class);
         internalEventMap.put(eventSpecs.name(), dimensionEventClass);
     }
@@ -239,13 +243,9 @@ public class DimensionRegistry {
         /*
             EntityId should be kept separately, not in the mapping.
          */
-        for (String path : eventMapping.getEntityIdPaths()) {
-            JsonNode entityId = data.at(path);
-            if (!entityId.isNull() && !entityId.toString().isEmpty()) {
-                dataNode.set("entityId", entityId);
-                break;
-            }
-        }
+
+        dataNode.set(ENTITY_ID, getEntityId(eventMapping, data));
+
         Class<? extends DimensionEvent> derivedClass = this.internalEventMap.get(eventMapping.getEventType());
         if (DimensionEvent.class.isAssignableFrom(derivedClass)) {
             DimensionEvent dimensionEvent = mapper.convertValue(dataNode, derivedClass);
@@ -265,5 +265,32 @@ public class DimensionRegistry {
             JmxReporterMetricRegistry.getInstance().markNotDimensionEvent(eventMapping.getSourceEventId(), eventMapping.getEventType());
             throw new IngestionEventMappingException("Event should be of type " + DimensionEvent.class);
         }
+    }
+
+    private JsonNode getEntityId(EventMapping eventMapping, ObjectNode data) throws IngestionEventMappingException{
+        if (eventMapping.getEntityIdPaths() != null) {
+            return getEntityIdFromXPath(data, eventMapping.getEntityIdPaths());
+        }
+        Optional.ofNullable(eventMapping.getPivot()).orElseThrow(() ->
+                new IngestionEventMappingException("EntityId is missing from Dimension Event {}" + data));
+        return eventMapping.getPivot().getType().equals(XPATH) ? getEntityIdFromXPath(data, eventMapping.getPivot().getValue()) :
+                getEntityIdFromGroovy(eventMapping.getPivot().getExpression(), data);
+    }
+
+    private JsonNode getEntityIdFromGroovy(String script, ObjectNode data) {
+        String entityId = GroovyTranslator.translate(script, data).toString();
+        ObjectMapper mapper = ObjectMapperFactory.getMapper();
+        data.set("entityIdFromGroovy", mapper.convertValue(entityId, JsonNode.class));
+        return data.at("/entityIdFromGroovy");
+    }
+
+    private JsonNode getEntityIdFromXPath(ObjectNode data, List<String> paths) {
+        for (String path : paths) {
+            JsonNode entityId = data.at(path);
+            if (!entityId.isNull() && !entityId.toString().isEmpty()) {
+                return entityId;
+            }
+        }
+        return null;
     }
 }
