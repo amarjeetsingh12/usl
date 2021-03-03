@@ -11,6 +11,7 @@ import com.flipkart.gap.usl.core.model.dimension.SizeNTimeBasedRetentionPolicy;
 import com.flipkart.gap.usl.core.model.dimension.TimeBasedRetentionPolicy;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class MapRetentionPolicyVisitor<K, V extends DimensionCollection.DimensionElement> implements RetentionPolicyVisitor<Map<K, V>> {
@@ -19,7 +20,7 @@ public class MapRetentionPolicyVisitor<K, V extends DimensionCollection.Dimensio
     public void visit(SizeNTimeBasedRetentionPolicy policy, Map<K, V> elements) {
         if (elements != null) {
             sizeBasedRemoval(policy.getSizeLimit(), elements);
-            timeBaseRemoval(policy.getTimeUnit().toMillis(policy.getDuration()), elements);
+            timeBaseRemoval(policy.getTimeUnit(), policy.getDuration(), elements);
         }
     }
 
@@ -33,15 +34,15 @@ public class MapRetentionPolicyVisitor<K, V extends DimensionCollection.Dimensio
     @Override
     public void visit(TimeBasedRetentionPolicy policy, Map<K, V> elements) {
         if (elements != null) {
-            timeBaseRemoval(policy.getLimitInMilliseconds(), elements);
+            timeBaseRemoval(policy.getTimeUnit(), policy.getDuration(), elements);
         }
     }
 
-    private void timeBaseRemoval(long limitInMilliseconds, Map<K, V> elements) {
+    private void timeBaseRemoval(TimeUnit timeUnit, long duration, Map<K, V> elements) {
         Iterator<Map.Entry<K, V>> iterator = elements.entrySet().iterator();
         while (iterator.hasNext()) {
             V value = iterator.next().getValue();
-            if (RetentionPolicyHelper.isTimeLimitExceeded(limitInMilliseconds, value)) {
+            if (RetentionPolicyHelper.isTimeLimitExceeded(timeUnit.toMillis(duration), value)) {
                 iterator.remove();
             }
         }

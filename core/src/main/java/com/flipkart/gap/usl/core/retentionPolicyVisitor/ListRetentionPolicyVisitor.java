@@ -20,7 +20,7 @@ public class ListRetentionPolicyVisitor<K extends DimensionCollection.DimensionE
     public void visit(SizeNTimeBasedRetentionPolicy policy, List<K> elements) {
         if (elements != null) {
             sizeBasedRemoval(policy.getSizeLimit(), elements);
-            timeBaseRemoval(policy.getTimeUnit().toMillis(policy.getDuration()), elements);
+            timeBaseRemoval(policy.getTimeUnit(), policy.getDuration(), elements);
         }
     }
 
@@ -34,7 +34,7 @@ public class ListRetentionPolicyVisitor<K extends DimensionCollection.DimensionE
     @Override
     public void visit(TimeBasedRetentionPolicy policy, List<K> elements) {
         if (elements != null) {
-            timeBaseRemoval(policy.getLimitInMilliseconds(), elements);
+            timeBaseRemoval(policy.getTimeUnit(), policy.getDuration(), elements);
         }
     }
 
@@ -51,19 +51,20 @@ public class ListRetentionPolicyVisitor<K extends DimensionCollection.DimensionE
         }
     }
 
-    private void timeBaseRemoval(long millis, List<K> elements) {
-        elements.removeIf(element -> RetentionPolicyHelper.isTimeLimitExceeded(millis, element));
+    private void timeBaseRemoval(TimeUnit timeUnit, long duration, List<K> elements) {
+        elements.removeIf(element -> RetentionPolicyHelper.isTimeLimitExceeded(timeUnit.toMillis(duration), element));
     }
 
 
     /**
      * Getting a set of Indexes to remove on LRU basis
+     *
      * @param sizeLimit
      * @param elements
      * @return
      */
     private Set<Integer> getIndexesToRemove(int sizeLimit, List<K> elements) {
-        if(elements.size() > sizeLimit) {
+        if (elements.size() > sizeLimit) {
             int entriesToRemove = elements.size() - sizeLimit;
             List<Pair<Long, Integer>> sortedTimestampIndexPair = sortedTimestamp(elements);
             return sortedTimestampIndexPair.stream()
@@ -76,6 +77,7 @@ public class ListRetentionPolicyVisitor<K extends DimensionCollection.DimensionE
 
     /**
      * sorting the Pair of Timestamp and Index in accessing order
+     *
      * @param elements
      * @return
      */
