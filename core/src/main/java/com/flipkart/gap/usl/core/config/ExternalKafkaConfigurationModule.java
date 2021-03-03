@@ -1,5 +1,6 @@
 package com.flipkart.gap.usl.core.config;
 
+import com.flipkart.gap.usl.core.config.v2.ApplicationConfiguration;
 import com.flipkart.gap.usl.core.config.v2.ExternalKafkaApplicationConfiguration;
 import com.flipkart.gap.usl.core.store.dimension.kafka.ExternalKafkaPublisherDAOImpl;
 import com.flipkart.gap.usl.core.store.dimension.kafka.KafkaPublisherDao;
@@ -33,5 +34,6 @@ public class ExternalKafkaConfigurationModule extends AbstractModule {
         bind(EventProcessorConfig.class).annotatedWith(Names.named("externalKafkaConfig")).toInstance(configuration.getExternalKafkaConfig());
         bind(EventProcessorConfig.class).annotatedWith(Names.named("eventProcessorConfig")).toInstance(configuration.getEventProcessorConfig());
         bind(KafkaPublisherDao.class).to(ExternalKafkaPublisherDAOImpl.class);
+        bind(ExternalKafkaApplicationConfiguration.class).toInstance(configuration);
     }
 }

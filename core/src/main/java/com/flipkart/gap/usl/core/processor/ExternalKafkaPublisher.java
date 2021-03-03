@@ -2,10 +2,8 @@ package com.flipkart.gap.usl.core.processor;
 
 import com.flipkart.gap.usl.core.client.KafkaClient;
 import com.flipkart.gap.usl.core.client.OffsetManager;
-import com.flipkart.gap.usl.core.config.ConfigurationModule;
 import com.flipkart.gap.usl.core.config.EventProcessorConfig;
 import com.flipkart.gap.usl.core.config.ExternalKafkaConfigurationModule;
-import com.flipkart.gap.usl.core.config.v2.ApplicationConfiguration;
 import com.flipkart.gap.usl.core.config.v2.ExternalKafkaApplicationConfiguration;
 import com.flipkart.gap.usl.core.constant.Constants;
 import com.flipkart.gap.usl.core.helper.SparkHelper;
@@ -51,7 +49,6 @@ public class ExternalKafkaPublisher implements Serializable {
     private transient OffsetManager offsetManager;
     @Inject
     private transient KafkaClient kafkaClient;
-
     @Inject
     @Named("externalKafkaConfig")
     private EventProcessorConfig externalKafkaConfig;
