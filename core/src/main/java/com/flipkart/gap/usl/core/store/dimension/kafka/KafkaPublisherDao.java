@@ -1,9 +1,9 @@
 package com.flipkart.gap.usl.core.store.dimension.kafka;
 
-import com.flipkart.gap.usl.core.model.dimension.Dimension;
-
-import java.util.Set;
+import org.apache.kafka.clients.producer.ProducerRecord;
 
 public interface KafkaPublisherDao {
-    void bulkPublish(Set<Dimension> dimensions) throws Exception;
+
+    void publish(String topicName, byte[] record) throws Exception;
+
 }

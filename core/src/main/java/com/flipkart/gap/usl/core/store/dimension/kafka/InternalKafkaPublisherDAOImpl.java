@@ -23,7 +23,7 @@ import java.util.Set;
 
 @Singleton
 @Slf4j
-public class KafkaPublisherDAOImpl implements KafkaPublisherDao{
+public class InternalKafkaPublisherDAOImpl implements KafkaPublisherDao{
 
     private final Integer KAFKA_MESSAGE_BATCH_SIZE_MAX = 100;
     private final Integer KAFKA_LINGER_SIZE_MS = 10;
@@ -31,13 +31,11 @@ public class KafkaPublisherDAOImpl implements KafkaPublisherDao{
     @Inject
     @Named("eventProcessorConfig")
     private EventProcessorConfig eventProcessorConfig;
-//    @Getter
-//    private ProducerConfig producerConfig;
+
     private Producer<String, byte[]> producer;
 
     @Inject
     public void init() {
-//        this.producerConfig = producerConfig;
         Properties props = new Properties();
 
         props.put(org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, eventProcessorConfig.getKafkaBrokerConnection());
@@ -55,34 +53,13 @@ public class KafkaPublisherDAOImpl implements KafkaPublisherDao{
         }
     }
 
-
-    private void sendEvent(Dimension dimension) throws Exception {
-        log.error("Dimension: {}", dimension.getEntityId());
-        try {
-            producer.send(createProducerRecord(dimension)).get();
-        } catch (Exception e) {
-            log.error("Exception is publishing event: {}", e);
-            e.printStackTrace();
-            throw new Exception();
-        }
+    public void publish(String topic, byte[] record) throws Exception {
+        producer.send(createProducerRecord(topic, record)).get();
     }
 
-    private ProducerRecord<String,byte[]> createProducerRecord(Dimension dimension) throws JsonProcessingException {
+    private ProducerRecord<String,byte[]> createProducerRecord(String topic, byte[] record) throws JsonProcessingException {
 
-        return new ProducerRecord<>(dimension.getDimensionSpecs().name(),
-                ObjectMapperFactory.getMapper().writeValueAsBytes(dimension)
-        );
-    }
-
-    @Override
-    public void bulkPublish(Set<Dimension> dimensions) throws Exception {
-
-        log.error("Test message. KafkaPublisherDAOImpl");
-        Iterator<Dimension> dimensionIterator = dimensions.iterator();
-        while (dimensionIterator.hasNext()) {
-            sendEvent(dimensionIterator.next());
-        }
-
+        return new ProducerRecord<>(topic,record);
     }
 
 

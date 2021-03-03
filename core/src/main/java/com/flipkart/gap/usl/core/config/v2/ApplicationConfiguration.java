@@ -18,13 +18,14 @@ import java.util.Map;
  */
 @Data
 public class ApplicationConfiguration implements Serializable {
+
+    private EventProcessorConfig externalKafkaConfig;
     private EventProcessorConfig eventProcessorConfig;
     private Map<String,ResilienceConfig> applicationResilienceConfig;
     private String dimensionPackage;
     private CacheConfig cacheConfig;
     private MongoConfig mongoConfig;
     private HbaseConfig hbaseConfig;
-//    private CoreConfig coreConfig;
 
     @JsonCreator
     public ApplicationConfiguration(
@@ -34,7 +35,6 @@ public class ApplicationConfiguration implements Serializable {
             @JsonProperty("cacheConfig") CacheConfig cacheConfig,
             @JsonProperty("mongoConfig") MongoConfig mongoConfig,
             @JsonProperty("hbaseConfig") HbaseConfig hbaseConfig
-//            @JsonProperty("coreConfig") CoreConfig coreConfig
     ) {
         this.eventProcessorConfig = eventProcessorConfig;
         this.dimensionPackage = dimensionPackage;
@@ -42,7 +42,6 @@ public class ApplicationConfiguration implements Serializable {
         this.mongoConfig = mongoConfig;
         this.hbaseConfig = hbaseConfig;
         this.applicationResilienceConfig = applicationResilienceConfig;
-//        this.coreConfig = coreConfig;
         this.validate();
     }
 
