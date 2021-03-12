@@ -23,16 +23,11 @@ import java.util.Set;
 
 @Singleton
 @Slf4j
-public class InternalKafkaPublisherDAOImpl implements KafkaPublisherDao{
-
-    private final Integer KAFKA_MESSAGE_BATCH_SIZE_MAX = 100;
-    private final Integer KAFKA_LINGER_SIZE_MS = 10;
+public class InternalKafkaPublisherDAOImpl extends KafkaPublisherDao{
 
     @Inject
     @Named("eventProcessorConfig")
     private EventProcessorConfig eventProcessorConfig;
-
-    private Producer<String, byte[]> producer;
 
     @Inject
     public void init() {
@@ -40,8 +35,14 @@ public class InternalKafkaPublisherDAOImpl implements KafkaPublisherDao{
 
         props.put(org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, eventProcessorConfig.getKafkaBrokerConnection());
         props.put(org.apache.kafka.clients.producer.ProducerConfig.ACKS_CONFIG, "all");
-        props.put(org.apache.kafka.clients.producer.ProducerConfig.BATCH_SIZE_CONFIG, KAFKA_MESSAGE_BATCH_SIZE_MAX);
-        props.put(org.apache.kafka.clients.producer.ProducerConfig.LINGER_MS_CONFIG, KAFKA_LINGER_SIZE_MS);
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.RETRIES_CONFIG, eventProcessorConfig.getRetry());
+//        props.put(ProducerConfig.RETRY_BACKOFF_MS_CONFIG, producerConfig.getRetryBackoffMs());
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.BATCH_SIZE_CONFIG, eventProcessorConfig.getBatchSize());
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.LINGER_MS_CONFIG, eventProcessorConfig.getLingerTimeInMs());
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, eventProcessorConfig.getRequestTimeout());
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.MAX_BLOCK_MS_CONFIG, eventProcessorConfig.getMaxBlockMS());
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG, eventProcessorConfig.getMaxIdleTime());
+//        props.put(org.apache.kafka.clients.producer.ProducerConfig.BUFFER_MEMORY_CONFIG, maxBytesInBuffer / producerConfig.getProducersCount());
         props.put(org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArraySerializer");
         props.put(org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArraySerializer");
         props.put(org.apache.kafka.clients.producer.ProducerConfig.COMPRESSION_TYPE_CONFIG, CompressionType.GZIP.name);

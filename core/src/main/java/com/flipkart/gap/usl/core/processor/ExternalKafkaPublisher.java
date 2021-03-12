@@ -8,12 +8,14 @@ import com.flipkart.gap.usl.core.config.v2.ExternalKafkaApplicationConfiguration
 import com.flipkart.gap.usl.core.constant.Constants;
 import com.flipkart.gap.usl.core.helper.SparkHelper;
 import com.flipkart.gap.usl.core.processor.exception.ProcessingException;
+import com.flipkart.gap.usl.core.processor.stage.model.KafkaProducerRecord;
 import com.flipkart.gap.usl.core.store.dimension.kafka.KafkaPublisherDao;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import org.apache.spark.SparkConf;
@@ -140,18 +142,15 @@ public class ExternalKafkaPublisher implements Serializable {
         messages.foreachRDD(
                 (VoidFunction2<JavaRDD<ConsumerRecord<byte[], byte[]>>, Time>) (consumerRecordJavaRDD, time) -> {
 
-                    JavaRDD<Void> publishedRDD = consumerRecordJavaRDD.map(consumerRecord -> {
+                    JavaRDD<KafkaProducerRecord> publishedRDD = consumerRecordJavaRDD.map(consumerRecord -> {
                         SparkHelper.bootstrap();
-
-                        KafkaPublisherDao kafkaPublisherDao = ExternalKafkaConfigurationModule.getInjector(applicationConfiguration).getInstance(KafkaPublisherDao.class);
-                        kafkaPublisherDao.publish(externalKafkaConfig.getTopicName(), consumerRecord.value());
-
-                        return null;
+                        return new KafkaProducerRecord(externalKafkaConfig.getTopicName(), consumerRecord.value());
 
                     });
 
                     try {
-                        log.info("Processed {} records in current batch ", publishedRDD.count());
+                        KafkaPublisherDao kafkaPublisherDao = ExternalKafkaConfigurationModule.getInjector(applicationConfiguration).getInstance(KafkaPublisherDao.class);
+                        kafkaPublisherDao.sendRecords(publishedRDD.collect());
                         publishedRDD.unpersist();
                     } catch (Throwable throwable) {
                         log.error("Exception occurred during count ", throwable);

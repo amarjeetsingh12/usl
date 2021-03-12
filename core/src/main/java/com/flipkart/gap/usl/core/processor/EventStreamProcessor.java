@@ -9,8 +9,10 @@ import com.flipkart.gap.usl.core.config.v2.ApplicationConfiguration;
 import com.flipkart.gap.usl.core.constant.Constants;
 import com.flipkart.gap.usl.core.helper.SparkHelper;
 import com.flipkart.gap.usl.core.metric.JmxReporterMetricRegistry;
+import com.flipkart.gap.usl.core.model.DimensionMutateRequest;
 import com.flipkart.gap.usl.core.model.EntityDimensionCompositeKey;
 import com.flipkart.gap.usl.core.model.InternalEventMeta;
+import com.flipkart.gap.usl.core.model.dimension.Dimension;
 import com.flipkart.gap.usl.core.processor.exception.ProcessingException;
 import com.flipkart.gap.usl.core.processor.stage.DimensionFetchStage;
 import com.flipkart.gap.usl.core.processor.stage.DimensionProcessStage;
@@ -178,7 +180,6 @@ public class EventStreamProcessor implements Serializable {
                         dimensionSaveStage.execute(dimensionPersistRequest);
                         return dimensionPersistRequest;
                     });
-
                     JavaRDD<ProcessingStageData> publishedRDD = persistedRDD.map(dimensionPersistRequest -> {
                         SparkHelper.bootstrap();
                         DimensionPublishStage dimensionPublishStage = ConfigurationModule.getInjector(applicationConfiguration).getInstance(DimensionPublishStage.class);
@@ -190,6 +191,7 @@ public class EventStreamProcessor implements Serializable {
                         log.info("Processed {} records in current batch ", publishedRDD.count());
                         internalEventMetaRDD.unpersist();
                         batchedRDD.unpersist();
+                        publishedRDD.unpersist();
                     } catch (Throwable throwable) {
                         log.error("Exception occurred during count ", throwable);
                         javaStreamingContext.stop(true, false);

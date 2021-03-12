@@ -1,5 +1,6 @@
 package com.flipkart.gap.usl.core.config;
 
+import com.flipkart.gap.usl.client.kafka.KafkaProducerClient;
 import com.flipkart.gap.usl.core.config.resilience.ResilienceConfig;
 import com.flipkart.gap.usl.core.store.dimension.DimensionStoreDAO;
 import com.flipkart.gap.usl.core.store.dimension.hbase.HBaseDimensionStoreDAO;
