@@ -6,7 +6,6 @@ import org.hibernate.validator.constraints.NotBlank;
 
 import javax.validation.constraints.Min;
 import java.io.Serializable;
-import java.util.Map;
 
 /**
  * Created by amarjeet.singh on 18/10/16.
