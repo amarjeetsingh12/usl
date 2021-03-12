@@ -136,7 +136,7 @@ public class OffsetManager {
         }
         return topicPartitionMap;
     }
-    
+
     private Long getEarliestOffset(int partition) throws Exception {
         if (offsetMap == null) {
             offsetMap = kafkaClient.getPartitionOffsets();
