@@ -1,7 +1,7 @@
 package com.flipkart.gap.usl.core.store.dimension.kafka;
 
-import com.flipkart.gap.usl.client.kafka.KafkaProducerException;
 import com.flipkart.gap.usl.core.processor.stage.model.KafkaProducerRecord;
+import com.flipkart.gap.usl.core.store.exception.KafkaProducerException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
