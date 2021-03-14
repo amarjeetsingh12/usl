@@ -137,9 +137,42 @@ public class OffsetManager {
         return topicPartitionMap;
     }
 
+    public Map<TopicPartition, Long> getMultipleTopicPartitions() throws Exception {
+        reconnectZKIfRequired();
+        Map<TopicPartition, Long> topicPartitionMap = new HashMap<>();
+        List<String> topicNames = eventProcessorConfig.getTopicNames();
+        int partitionCount = kafkaClient.getPartitionCount(topicNames);
+        for (String topicName: topicNames) {
+
+            for (int partition = 0; partition < partitionCount; partition++) {
+                Stat partitionStat = this.zooKeeper.exists(getPartitionPath(partition, topicName), false);
+                if (partitionStat == null) {
+                    Long defaultOffset = getEarliestOffset(partition, topicName);
+                    topicPartitionMap.put(new TopicPartition(topicName, partition), defaultOffset);
+                    log.info("Zookeeper partition stat not found sending earliest {},{},{}", topicName, partition, defaultOffset);
+                } else {
+                    long offsetFound = Long.parseLong(new String(this.zooKeeper.getData(getPartitionPath(partition, topicName), false, partitionStat)));
+                    topicPartitionMap.put(new TopicPartition(topicName, partition), offsetFound);
+                    log.info("Zookeeper partition stat found sending existing {},{},{}", topicName, partition, offsetFound);
+                }
+            }
+
+        }
+
+
+        return topicPartitionMap;
+    }
+
     private Long getEarliestOffset(int partition) throws Exception {
         if (offsetMap == null) {
             offsetMap = kafkaClient.getPartitionOffsets();
+        }
+        return offsetMap.get(partition);
+    }
+
+    private Long getEarliestOffset(int partition, String topicName) throws Exception {
+        if (offsetMap == null) {
+            offsetMap = kafkaClient.getPartitionOffsets(topicName);
         }
         return offsetMap.get(partition);
     }

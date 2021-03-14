@@ -6,6 +6,7 @@ import org.hibernate.validator.constraints.NotBlank;
 
 import javax.validation.constraints.Min;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * Created by amarjeet.singh on 18/10/16.
@@ -24,8 +25,10 @@ public class EventProcessorConfig implements Serializable {
     private int batchSize = 100000;
     @Min(1)
     private int dimensionProcessingBatchSize = 50;
-    @NotBlank
+
     private String topicName;
+
+    private List<String> topicNames;
 
     @NotBlank
     private String kafkaBrokerConnection;

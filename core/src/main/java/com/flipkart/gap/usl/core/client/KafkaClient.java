@@ -5,6 +5,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -50,7 +51,16 @@ public class KafkaClient {
         consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArrayDeserializer");
         consumer = new KafkaConsumer<>(consumerProperties);
         producer = new KafkaProducer<>(props);
-        producerCount = producer.partitionsFor(eventProcessorConfig.getTopicName()).size();
+        if (StringUtils.isNotEmpty(eventProcessorConfig.getTopicName()))
+            producerCount = producer.partitionsFor(eventProcessorConfig.getTopicName()).size();
+    }
+
+    public int getPartitionCount(List<String> topics) {
+        int totalPartitions = 0;
+        for (String topic: topics) {
+            totalPartitions += producer.partitionsFor(topic).size();
+        }
+        return totalPartitions / topics.size();
     }
 
     public int getPartitionCount() {
@@ -61,6 +71,15 @@ public class KafkaClient {
         List<TopicPartition> topicPartitions = new ArrayList<>();
         for (int i = 0; i < producerCount; i++) {
             topicPartitions.add(new TopicPartition(eventProcessorConfig.getTopicName(), i));
+        }
+        Map<TopicPartition, Long> offsetMap = consumer.beginningOffsets(topicPartitions);
+        return offsetMap.entrySet().stream().collect(Collectors.toMap(entry -> entry.getKey().partition(), Map.Entry::getValue));
+    }
+
+    public Map<Integer, Long> getPartitionOffsets(String topicName) throws Exception {
+        List<TopicPartition> topicPartitions = new ArrayList<>();
+        for (int i = 0; i < producerCount; i++) {
+            topicPartitions.add(new TopicPartition(topicName, i));
         }
         Map<TopicPartition, Long> offsetMap = consumer.beginningOffsets(topicPartitions);
         return offsetMap.entrySet().stream().collect(Collectors.toMap(entry -> entry.getKey().partition(), Map.Entry::getValue));

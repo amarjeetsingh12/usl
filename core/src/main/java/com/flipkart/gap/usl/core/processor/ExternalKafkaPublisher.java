@@ -54,6 +54,10 @@ public class ExternalKafkaPublisher implements Serializable {
     @Named("externalKafkaConfig")
     private EventProcessorConfig externalKafkaConfig;
 
+    @Inject
+    @Named("eventProcessorConfig")
+    private EventProcessorConfig internalKafkaConfig;
+
     private transient SparkConf sparkConf;
     private transient HashMap<String, Object> kafkaParams;
     private transient JavaStreamingContext javaStreamingContext;
@@ -73,7 +77,7 @@ public class ExternalKafkaPublisher implements Serializable {
         sparkConf.set("spark.job.interruptOnCancel", "true");
         int maxRate = eventProcessorConfig.getBatchSize();
         log.info("fetching partition count configs");
-        int partitionCount = kafkaClient.getPartitionCount();
+        int partitionCount = kafkaClient.getPartitionCount(internalKafkaConfig.getTopicNames());
         log.info("fetched {} partition count configs",partitionCount);
         int maxRatePerPartition = maxRate / (partitionCount * eventProcessorConfig.getBatchDurationInSeconds());
         sparkConf.set("spark.streaming.kafka.maxRatePerPartition", maxRatePerPartition + "");
@@ -107,7 +111,7 @@ public class ExternalKafkaPublisher implements Serializable {
 
         JavaStreamingContext javaStreamingContext = new JavaStreamingContext(sparkConf, Durations.seconds(eventProcessorConfig.getBatchDurationInSeconds()));
 
-        Map<TopicPartition, Long> topicPartitionMap = offsetManager.getTopicPartition();
+        Map<TopicPartition, Long> topicPartitionMap = offsetManager.getMultipleTopicPartitions();
         log.info("Fetched topic and partition map as {}", topicPartitionMap);
         List<TopicPartition> topicPartitionList = new ArrayList<>(topicPartitionMap.keySet());
         JavaInputDStream<ConsumerRecord<byte[], byte[]>> messages = KafkaUtils.createDirectStream(
