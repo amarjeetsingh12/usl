@@ -48,6 +48,7 @@ public class InternalKafkaPublisherDAOImpl extends KafkaPublisherDao{
         props.put(org.apache.kafka.clients.producer.ProducerConfig.COMPRESSION_TYPE_CONFIG, CompressionType.GZIP.name);
 
         try {
+            // Can be changed to multiple producers if need arises
             producer = new org.apache.kafka.clients.producer.KafkaProducer<String, byte[]>(props);
         } catch (Exception e) {
             log.error("Exception making producer: {}", ExceptionUtils.getMessage(e), e);
