@@ -37,9 +37,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-/**
- * Created by amarjeet.singh on 18/10/16.
- */
 @Slf4j
 @Singleton
 public class ExternalKafkaPublisher implements Serializable {

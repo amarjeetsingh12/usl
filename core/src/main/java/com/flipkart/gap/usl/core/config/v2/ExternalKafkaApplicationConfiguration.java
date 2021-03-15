@@ -7,9 +7,6 @@ import lombok.Data;
 
 import java.io.Serializable;
 
-/**
- * Created by piyush.chhabra on 25/03/2019
- */
 @Data
 public class ExternalKafkaApplicationConfiguration implements Serializable {
 
