@@ -26,7 +26,7 @@ public class EventProcessorConfig implements Serializable {
     @Min(1)
     private int dimensionProcessingBatchSize = 50;
     @NotBlank
-    List<String> topicNames;
+    private List<String> topicNames;
     @NotBlank
     private String kafkaBrokerConnection;
     private String backPressureInitialRate = "20000";
