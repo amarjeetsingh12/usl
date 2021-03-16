@@ -10,46 +10,26 @@ import java.util.List;
 
 @Getter
 @Setter
-public class InternalEventProcessorConfig implements Serializable {
-    @NotBlank
-    private String sparkMasterWithPort;
-    @Min(10)
-    private int batchDurationInSeconds = 30;
-    @Min(20)
-    private int partitions = 30;
-    private int perPartitionRecord = 50;
-    @Min(10000)
-    private int batchSize = 100000;
-    @Min(1)
-    private int dimensionProcessingBatchSize = 50;
+public class ExternalKafkaConfig implements Serializable {
 
     @NotBlank
-    private List<String> topicNames;
+    private String topicName;
 
     @NotBlank
     private String kafkaBrokerConnection;
-    private String backPressureInitialRate = "20000";
-    @NotBlank
-    private String zkHosts;
-    @NotBlank
-    private int zkPort = 2181;
-    @NotBlank
-    private String zkRoot = "/";
-    private String executorExtraJavaOpts = "";
-    private String executorMemory = "1g";
-    private int executorCores = 1;
-    private String blockInterval = "500ms";
-    private String environment;
     private int offsetSaveThreads = 10;
-    private int producersCount = 1;
+    private int producersCount = 10;
     private int requestTimeout = 30000;
+    @Min(10000)
+    private int batchSize = 100000;
     private int maxBlockMS = 60000;
     private int maxIdleTime = 540000;
     private int lingerTimeInMs = 100;
     private int retry = 0;
+    private int executorServicePoolSize = 10;
     private KafkaConfig kafkaConfig;
 
-    public InternalEventProcessorConfig() {
+    public ExternalKafkaConfig() {
     }
 
     @Getter

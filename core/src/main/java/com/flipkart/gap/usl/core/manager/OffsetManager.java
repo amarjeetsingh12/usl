@@ -1,6 +1,6 @@
-package com.flipkart.gap.usl.core.client;
+package com.flipkart.gap.usl.core.manager;
 
-import com.flipkart.gap.usl.core.config.InternalEventProcessorConfig;
+import com.flipkart.gap.usl.core.config.EventProcessorConfig;
 import com.flipkart.gap.usl.core.constant.Constants;
 import com.flipkart.gap.usl.core.exception.OffsetSaveException;
 import com.google.inject.Inject;
@@ -9,11 +9,7 @@ import com.google.inject.name.Named;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.spark.streaming.kafka010.OffsetRange;
-import org.apache.zookeeper.CreateMode;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooDefs;
-import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.*;
 import org.apache.zookeeper.data.Stat;
 
 import java.io.IOException;
@@ -21,27 +17,28 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
+/**
+ * Created by amarjeet.singh on 13/10/16.
+ */
 @Slf4j
 @Singleton
-public class InternalEventOffsetManager {
+public class OffsetManager {
     private ZooKeeper zooKeeper = null;
+
     @Inject
-    private InternalEventKafkaClient kafkaClient;
+    private PartitionManager partitionManager;
+
     @Inject
-    @Named("internalEventProcessorConfig")
-    private InternalEventProcessorConfig eventProcessorConfig;
+    @Named("eventProcessorConfig")
+    private EventProcessorConfig eventProcessorConfig;
     private Map<Integer, Long> offsetMap;
     private ExecutorService executorService;
     private static final int MAX_OFFSET_RETRY = 3;
 
-    public InternalEventOffsetManager() {
+    public OffsetManager() {
     }
 
     @Inject
@@ -122,14 +119,13 @@ public class InternalEventOffsetManager {
         }
     }
 
-    public Map<TopicPartition, Long> getMultipleTopicPartitions() throws Exception {
+    public Map<TopicPartition, Long> getTopicPartitionOffsets(List<String> topicNames) throws Exception {
         reconnectZKIfRequired();
 
         Map<TopicPartition, Long> topicPartitionMap = new HashMap<>();
 
-        for (String topicName: eventProcessorConfig.getTopicNames()) {
-
-            int partitionCount = kafkaClient.getPartitionCount(topicName);
+        for (String topicName: topicNames) {
+            int partitionCount = partitionManager.getPartitionCount(topicName);
 
             for (int partition = 0; partition < partitionCount; partition++) {
                 Stat partitionStat = this.zooKeeper.exists(getPartitionPath(partition, topicName), false);
@@ -149,9 +145,9 @@ public class InternalEventOffsetManager {
         return topicPartitionMap;
     }
 
-    private Long getEarliestOffset(String topicName, int partition) {
+    private Long getEarliestOffset(String topicName, int partition) throws Exception {
         if (offsetMap == null) {
-            offsetMap = kafkaClient.getPartitionOffsets(topicName);
+            offsetMap = partitionManager.getPartitionOffsets(topicName);
         }
         return offsetMap.get(partition);
     }

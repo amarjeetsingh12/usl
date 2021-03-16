@@ -1,8 +1,8 @@
 package com.flipkart.gap.usl.core.processor;
 
 import com.codahale.metrics.Timer;
-import com.flipkart.gap.usl.core.client.KafkaClient;
-import com.flipkart.gap.usl.core.client.OffsetManager;
+import com.flipkart.gap.usl.core.manager.OffsetManager;
+import com.flipkart.gap.usl.core.manager.PartitionManager;
 import com.flipkart.gap.usl.core.config.ConfigurationModule;
 import com.flipkart.gap.usl.core.config.EventProcessorConfig;
 import com.flipkart.gap.usl.core.config.v2.ApplicationConfiguration;
@@ -52,7 +52,7 @@ public class EventStreamProcessor implements Serializable {
     @Inject
     private transient OffsetManager offsetManager;
     @Inject
-    private transient KafkaClient kafkaClient;
+    private transient PartitionManager partitionManager;
     private transient SparkConf sparkConf;
     private transient HashMap<String, Object> kafkaParams;
     private transient JavaStreamingContext javaStreamingContext;
@@ -72,9 +72,10 @@ public class EventStreamProcessor implements Serializable {
         sparkConf.set("spark.job.interruptOnCancel", "true");
         int maxRate = eventProcessorConfig.getBatchSize();
         log.info("fetching partition count configs");
-        int partitionCount = kafkaClient.getPartitionCount();
-        log.info("fetched {} partition count configs",partitionCount);
-        int maxRatePerPartition = maxRate / (partitionCount * eventProcessorConfig.getBatchDurationInSeconds());
+
+        int avgPartitionCount = getAveragePartitionCount();
+        log.info("fetched {} partition count configs", avgPartitionCount);
+        int maxRatePerPartition = maxRate / (avgPartitionCount * eventProcessorConfig.getBatchDurationInSeconds());
         sparkConf.set("spark.streaming.kafka.maxRatePerPartition", maxRatePerPartition + "");
         log.info("Using spark config {}", sparkConf);
         kafkaParams = new HashMap<>();
@@ -106,7 +107,7 @@ public class EventStreamProcessor implements Serializable {
 
         JavaStreamingContext javaStreamingContext = new JavaStreamingContext(sparkConf, Durations.seconds(eventProcessorConfig.getBatchDurationInSeconds()));
 
-        Map<TopicPartition, Long> topicPartitionMap = offsetManager.getTopicPartition();
+        Map<TopicPartition, Long> topicPartitionMap = offsetManager.getTopicPartitionOffsets(eventProcessorConfig.getTopicNames());
         log.info("Fetched topic and partition map as {}", topicPartitionMap);
         List<TopicPartition> topicPartitionList = new ArrayList<>(topicPartitionMap.keySet());
         JavaInputDStream<ConsumerRecord<byte[], byte[]>> messages = KafkaUtils.createDirectStream(
@@ -211,5 +212,14 @@ public class EventStreamProcessor implements Serializable {
         });
 
         return javaStreamingContext;
+    }
+
+    private int getAveragePartitionCount() {
+
+        int totalPartitions = 0;
+        Collection<Integer> list = partitionManager.getPartitionCountMap().values();
+        for (Integer partition: list) totalPartitions += partition;
+
+        return totalPartitions / partitionManager.getPartitionCountMap().keySet().size();
     }
 }

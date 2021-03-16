@@ -1,10 +1,10 @@
 package com.flipkart.gap.usl.core.processor;
 
-import com.flipkart.gap.usl.core.client.InternalEventKafkaClient;
-import com.flipkart.gap.usl.core.client.InternalEventOffsetManager;
-import com.flipkart.gap.usl.core.config.ExternalEventConfig;
+import com.flipkart.gap.usl.core.manager.OffsetManager;
+import com.flipkart.gap.usl.core.manager.PartitionManager;
+import com.flipkart.gap.usl.core.config.EventProcessorConfig;
+import com.flipkart.gap.usl.core.config.ExternalKafkaConfig;
 import com.flipkart.gap.usl.core.config.ExternalKafkaConfigurationModule;
-import com.flipkart.gap.usl.core.config.InternalEventProcessorConfig;
 import com.flipkart.gap.usl.core.config.v2.ExternalKafkaApplicationConfiguration;
 import com.flipkart.gap.usl.core.constant.Constants;
 import com.flipkart.gap.usl.core.helper.SparkHelper;
@@ -39,8 +39,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
-import static java.lang.Integer.sum;
-
 @Slf4j
 @Singleton
 public class ExternalKafkaPublisher implements Serializable {
@@ -48,16 +46,16 @@ public class ExternalKafkaPublisher implements Serializable {
     @Inject
     private ExternalKafkaApplicationConfiguration applicationConfiguration;
     @Inject
-    private transient InternalEventOffsetManager offsetManager;
+    private transient OffsetManager offsetManager;
     @Inject
-    private transient InternalEventKafkaClient kafkaClient;
+    private transient PartitionManager partitionManager;
     @Inject
-    @Named("externalEventConfig")
-    private ExternalEventConfig externalEventConfig;
+    @Named("externalKafkaConfig")
+    private ExternalKafkaConfig externalKafkaConfig;
 
     @Inject
-    @Named("internalEventProcessorConfig")
-    private InternalEventProcessorConfig eventProcessorConfig;
+    @Named("eventProcessorConfig")
+    private EventProcessorConfig eventProcessorConfig;
 
     private transient SparkConf sparkConf;
     private transient HashMap<String, Object> kafkaParams;
@@ -107,11 +105,11 @@ public class ExternalKafkaPublisher implements Serializable {
         }
     }
 
-    private JavaStreamingContext getStreamingContext(InternalEventProcessorConfig eventProcessorConfig) throws Exception {
+    private JavaStreamingContext getStreamingContext(EventProcessorConfig eventProcessorConfig) throws Exception {
 
         JavaStreamingContext javaStreamingContext = new JavaStreamingContext(sparkConf, Durations.seconds(eventProcessorConfig.getBatchDurationInSeconds()));
 
-        Map<TopicPartition, Long> topicPartitionMap = offsetManager.getMultipleTopicPartitions();
+        Map<TopicPartition, Long> topicPartitionMap = offsetManager.getTopicPartitionOffsets(eventProcessorConfig.getTopicNames());
         log.info("Fetched topic and partition map as {}", topicPartitionMap);
         List<TopicPartition> topicPartitionList = new ArrayList<>(topicPartitionMap.keySet());
         JavaInputDStream<ConsumerRecord<byte[], byte[]>> messages = KafkaUtils.createDirectStream(
@@ -147,13 +145,20 @@ public class ExternalKafkaPublisher implements Serializable {
 
                     JavaRDD<KafkaProducerRecord> publishedRDD = consumerRecordJavaRDD.map(consumerRecord -> {
                         SparkHelper.bootstrap();
-                        return new KafkaProducerRecord(externalEventConfig.getTopicName(), consumerRecord.value());
+                        return new KafkaProducerRecord(externalKafkaConfig.getTopicName(), consumerRecord.key().toString(), consumerRecord.value());
+                    });
 
+
+                    // Approach 1
+                    publishedRDD.foreachPartition(rdd -> {
+                        KafkaPublisherDao kafkaPublisherDao = ExternalKafkaConfigurationModule.getInjector(applicationConfiguration).getInstance(KafkaPublisherDao.class);
+                        List<KafkaProducerRecord> producerRecordList = new ArrayList<>();
+                        while (rdd.hasNext())
+                            producerRecordList.add((rdd.next()));
+                        kafkaPublisherDao.sendRecords(producerRecordList);
                     });
 
                     try {
-                        KafkaPublisherDao kafkaPublisherDao = ExternalKafkaConfigurationModule.getInjector(applicationConfiguration).getInstance(KafkaPublisherDao.class);
-                        kafkaPublisherDao.sendRecords(publishedRDD.collect());
                         publishedRDD.unpersist();
                     } catch (Throwable throwable) {
                         log.error("Exception occurred during count ", throwable);
@@ -181,9 +186,9 @@ public class ExternalKafkaPublisher implements Serializable {
     private int getAveragePartitionCount() {
 
         int totalPartitions = 0;
-        Collection<Integer> list = kafkaClient.getPartitionCountMap().values();
+        Collection<Integer> list = partitionManager.getPartitionCountMap().values();
         for (Integer partition: list) totalPartitions += partition;
 
-        return totalPartitions / kafkaClient.getPartitionCountMap().keySet().size();
+        return totalPartitions / partitionManager.getPartitionCountMap().keySet().size();
     }
 }

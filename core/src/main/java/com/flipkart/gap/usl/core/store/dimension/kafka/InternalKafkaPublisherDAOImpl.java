@@ -11,6 +11,7 @@ import lombok.Getter;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -20,6 +21,8 @@ import org.apache.kafka.common.serialization.ByteArrayDeserializer;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @Singleton
 @Slf4j
@@ -31,7 +34,7 @@ public class InternalKafkaPublisherDAOImpl extends KafkaPublisherDao{
 
     @Inject
     public void init() {
-        Properties props = new Properties();
+        props = new Properties();
 
         props.put(org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, eventProcessorConfig.getKafkaBrokerConnection());
         props.put(org.apache.kafka.clients.producer.ProducerConfig.ACKS_CONFIG, "all");
@@ -46,16 +49,16 @@ public class InternalKafkaPublisherDAOImpl extends KafkaPublisherDao{
         props.put(org.apache.kafka.clients.producer.ProducerConfig.COMPRESSION_TYPE_CONFIG, CompressionType.GZIP.name);
 
         try {
-            // Can be changed to multiple producers if need arises
-            producer = new org.apache.kafka.clients.producer.KafkaProducer<String, byte[]>(props);
+            producers = new LinkedBlockingQueue<>(eventProcessorConfig.getProducersCount());
+            for (int i = 0; i < eventProcessorConfig.getProducersCount(); i++) {
+                producers.add(new KafkaProducer<>(props));
+            }
+            if (eventProcessorConfig.getExecutorServicePoolSize() != 0) {
+                executorServicePool = Executors.newFixedThreadPool(eventProcessorConfig.getExecutorServicePoolSize());
+            }
         } catch (Exception e) {
             log.error("Exception making producer: {}", ExceptionUtils.getMessage(e), e);
         }
-    }
-
-    private ProducerRecord<String,byte[]> createProducerRecord(String topic, byte[] record) throws JsonProcessingException {
-
-        return new ProducerRecord<>(topic,record);
     }
 
 
