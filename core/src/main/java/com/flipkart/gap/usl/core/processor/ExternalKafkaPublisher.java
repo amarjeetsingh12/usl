@@ -148,8 +148,6 @@ public class ExternalKafkaPublisher implements Serializable {
                         return new KafkaProducerRecord(externalKafkaConfig.getTopicName(), consumerRecord.key().toString(), consumerRecord.value());
                     });
 
-
-                    // Approach 1
                     publishedRDD.foreachPartition(rdd -> {
                         KafkaPublisherDao kafkaPublisherDao = ExternalKafkaConfigurationModule.getInjector(applicationConfiguration).getInstance(KafkaPublisherDao.class);
                         List<KafkaProducerRecord> producerRecordList = new ArrayList<>();

@@ -84,8 +84,6 @@ public class KafkaPublisherDao {
                         records.add(new ProducerRecord<>(producerRecord.getTopicName(), producerRecord.getKey(), producerRecord.getValue())));
 
         return records;
-
-
     }
 
     public void sendRecords(List<KafkaProducerRecord> producerRecordList) throws KafkaProducerException {
