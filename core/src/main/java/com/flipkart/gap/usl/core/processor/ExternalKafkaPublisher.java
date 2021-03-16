@@ -1,9 +1,10 @@
 package com.flipkart.gap.usl.core.processor;
 
-import com.flipkart.gap.usl.core.client.KafkaClient;
-import com.flipkart.gap.usl.core.client.OffsetManager;
-import com.flipkart.gap.usl.core.config.EventProcessorConfig;
+import com.flipkart.gap.usl.core.client.InternalEventKafkaClient;
+import com.flipkart.gap.usl.core.client.InternalEventOffsetManager;
+import com.flipkart.gap.usl.core.config.ExternalEventConfig;
 import com.flipkart.gap.usl.core.config.ExternalKafkaConfigurationModule;
+import com.flipkart.gap.usl.core.config.InternalEventProcessorConfig;
 import com.flipkart.gap.usl.core.config.v2.ExternalKafkaApplicationConfiguration;
 import com.flipkart.gap.usl.core.constant.Constants;
 import com.flipkart.gap.usl.core.helper.SparkHelper;
@@ -32,10 +33,13 @@ import org.apache.spark.streaming.kafka010.OffsetRange;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static java.lang.Integer.sum;
 
 @Slf4j
 @Singleton
@@ -44,16 +48,16 @@ public class ExternalKafkaPublisher implements Serializable {
     @Inject
     private ExternalKafkaApplicationConfiguration applicationConfiguration;
     @Inject
-    private transient OffsetManager offsetManager;
+    private transient InternalEventOffsetManager offsetManager;
     @Inject
-    private transient KafkaClient kafkaClient;
+    private transient InternalEventKafkaClient kafkaClient;
     @Inject
-    @Named("externalKafkaConfig")
-    private EventProcessorConfig externalKafkaConfig;
+    @Named("externalEventConfig")
+    private ExternalEventConfig externalEventConfig;
 
     @Inject
-    @Named("eventProcessorConfig")
-    private EventProcessorConfig internalKafkaConfig;
+    @Named("internalEventProcessorConfig")
+    private InternalEventProcessorConfig eventProcessorConfig;
 
     private transient SparkConf sparkConf;
     private transient HashMap<String, Object> kafkaParams;
@@ -62,7 +66,6 @@ public class ExternalKafkaPublisher implements Serializable {
     @Inject
     public void init() {
         log.info("Initialising configs");
-        EventProcessorConfig eventProcessorConfig = applicationConfiguration.getEventProcessorConfig();
         sparkConf = new SparkConf().setMaster(eventProcessorConfig.getSparkMasterWithPort()).setAppName(Constants.Stream.GROUP_ID);
         sparkConf.set("spark.streaming.backpressure.initialRate", eventProcessorConfig.getBackPressureInitialRate());
         sparkConf.set("spark.dynamicAllocation.enabled", "false");
@@ -74,9 +77,9 @@ public class ExternalKafkaPublisher implements Serializable {
         sparkConf.set("spark.job.interruptOnCancel", "true");
         int maxRate = eventProcessorConfig.getBatchSize();
         log.info("fetching partition count configs");
-        int partitionCount = kafkaClient.getPartitionCount(internalKafkaConfig.getTopicNames());
-        log.info("fetched {} partition count configs",partitionCount);
-        int maxRatePerPartition = maxRate / (partitionCount * eventProcessorConfig.getBatchDurationInSeconds());
+
+        int avgPartitionCount = getAveragePartitionCount();
+        int maxRatePerPartition = maxRate / (avgPartitionCount * eventProcessorConfig.getBatchDurationInSeconds());
         sparkConf.set("spark.streaming.kafka.maxRatePerPartition", maxRatePerPartition + "");
         log.info("Using spark config {}", sparkConf);
         kafkaParams = new HashMap<>();
@@ -96,7 +99,7 @@ public class ExternalKafkaPublisher implements Serializable {
 
     public void process() throws ProcessingException {
         try {
-            javaStreamingContext = getStreamingContext(applicationConfiguration.getEventProcessorConfig());
+            javaStreamingContext = getStreamingContext(eventProcessorConfig);
             javaStreamingContext.start();
             javaStreamingContext.awaitTermination();
         } catch (Throwable e) {
@@ -104,7 +107,7 @@ public class ExternalKafkaPublisher implements Serializable {
         }
     }
 
-    private JavaStreamingContext getStreamingContext(EventProcessorConfig eventProcessorConfig) throws Exception {
+    private JavaStreamingContext getStreamingContext(InternalEventProcessorConfig eventProcessorConfig) throws Exception {
 
         JavaStreamingContext javaStreamingContext = new JavaStreamingContext(sparkConf, Durations.seconds(eventProcessorConfig.getBatchDurationInSeconds()));
 
@@ -144,7 +147,7 @@ public class ExternalKafkaPublisher implements Serializable {
 
                     JavaRDD<KafkaProducerRecord> publishedRDD = consumerRecordJavaRDD.map(consumerRecord -> {
                         SparkHelper.bootstrap();
-                        return new KafkaProducerRecord(externalKafkaConfig.getTopicName(), consumerRecord.value());
+                        return new KafkaProducerRecord(externalEventConfig.getTopicName(), consumerRecord.value());
 
                     });
 
@@ -173,5 +176,14 @@ public class ExternalKafkaPublisher implements Serializable {
         });
 
         return javaStreamingContext;
+    }
+
+    private int getAveragePartitionCount() {
+
+        int totalPartitions = 0;
+        Collection<Integer> list = kafkaClient.getPartitionCountMap().values();
+        for (Integer partition: list) totalPartitions += partition;
+
+        return totalPartitions / kafkaClient.getPartitionCountMap().keySet().size();
     }
 }

@@ -1,6 +1,6 @@
 package com.flipkart.gap.usl.core.client;
 
-import com.flipkart.gap.usl.core.config.EventProcessorConfig;
+import com.flipkart.gap.usl.core.config.InternalEventProcessorConfig;
 import com.flipkart.gap.usl.core.constant.Constants;
 import com.flipkart.gap.usl.core.exception.OffsetSaveException;
 import com.google.inject.Inject;
@@ -9,7 +9,11 @@ import com.google.inject.name.Named;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.spark.streaming.kafka010.OffsetRange;
-import org.apache.zookeeper.*;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
 import java.io.IOException;
@@ -17,26 +21,27 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-/**
- * Created by amarjeet.singh on 13/10/16.
- */
 @Slf4j
 @Singleton
-public class OffsetManager {
+public class InternalEventOffsetManager {
     private ZooKeeper zooKeeper = null;
     @Inject
-    private KafkaClient kafkaClient;
+    private InternalEventKafkaClient kafkaClient;
     @Inject
-    @Named("eventProcessorConfig")
-    private EventProcessorConfig eventProcessorConfig;
+    @Named("internalEventProcessorConfig")
+    private InternalEventProcessorConfig eventProcessorConfig;
     private Map<Integer, Long> offsetMap;
     private ExecutorService executorService;
     private static final int MAX_OFFSET_RETRY = 3;
 
-    public OffsetManager() {
+    public InternalEventOffsetManager() {
     }
 
     @Inject
@@ -117,31 +122,36 @@ public class OffsetManager {
         }
     }
 
-    public Map<TopicPartition, Long> getTopicPartition() throws Exception {
+    public Map<TopicPartition, Long> getMultipleTopicPartitions() throws Exception {
         reconnectZKIfRequired();
-        String topicName = eventProcessorConfig.getTopicName();
-        int partitionCount = kafkaClient.getPartitionCount();
+
         Map<TopicPartition, Long> topicPartitionMap = new HashMap<>();
-        for (int partition = 0; partition < partitionCount; partition++) {
-            Stat partitionStat = this.zooKeeper.exists(getPartitionPath(partition, topicName), false);
-            if (partitionStat == null) {
-                Long defaultOffset = getEarliestOffset(partition);
-                topicPartitionMap.put(new TopicPartition(topicName, partition), defaultOffset);
-                log.info("Zookeeper partition stat not found sending earliest {},{},{}", topicName, partition, defaultOffset);
-            } else {
-                long offsetFound = Long.parseLong(new String(this.zooKeeper.getData(getPartitionPath(partition, topicName), false, partitionStat)));
-                topicPartitionMap.put(new TopicPartition(topicName, partition), offsetFound);
-                log.info("Zookeeper partition stat found sending existing {},{},{}", topicName, partition, offsetFound);
+
+        for (String topicName: eventProcessorConfig.getTopicNames()) {
+
+            int partitionCount = kafkaClient.getPartitionCount(topicName);
+
+            for (int partition = 0; partition < partitionCount; partition++) {
+                Stat partitionStat = this.zooKeeper.exists(getPartitionPath(partition, topicName), false);
+                if (partitionStat == null) {
+                    Long defaultOffset = getEarliestOffset(topicName, partition);
+                    topicPartitionMap.put(new TopicPartition(topicName, partition), defaultOffset);
+                    log.info("Zookeeper partition stat not found sending earliest {},{},{}", topicName, partition, defaultOffset);
+                } else {
+                    long offsetFound = Long.parseLong(new String(this.zooKeeper.getData(getPartitionPath(partition, topicName), false, partitionStat)));
+                    topicPartitionMap.put(new TopicPartition(topicName, partition), offsetFound);
+                    log.info("Zookeeper partition stat found sending existing {},{},{}", topicName, partition, offsetFound);
+                }
             }
+
         }
+
         return topicPartitionMap;
     }
 
-
-
-    private Long getEarliestOffset(int partition) throws Exception {
+    private Long getEarliestOffset(String topicName, int partition) {
         if (offsetMap == null) {
-            offsetMap = kafkaClient.getPartitionOffsets();
+            offsetMap = kafkaClient.getPartitionOffsets(topicName);
         }
         return offsetMap.get(partition);
     }

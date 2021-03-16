@@ -6,13 +6,14 @@ import org.hibernate.validator.constraints.NotBlank;
 
 import javax.validation.constraints.Min;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * Created by amarjeet.singh on 18/10/16.
  */
 @Getter
 @Setter
-public class EventProcessorConfig implements Serializable {
+public class ExternalEventConfig implements Serializable {
     @NotBlank
     private String sparkMasterWithPort;
     @Min(10)
@@ -24,8 +25,10 @@ public class EventProcessorConfig implements Serializable {
     private int batchSize = 100000;
     @Min(1)
     private int dimensionProcessingBatchSize = 50;
+
     @NotBlank
     private String topicName;
+
     @NotBlank
     private String kafkaBrokerConnection;
     private String backPressureInitialRate = "20000";
@@ -49,7 +52,7 @@ public class EventProcessorConfig implements Serializable {
     private int retry = 0;
     private KafkaConfig kafkaConfig;
 
-    public EventProcessorConfig() {
+    public ExternalEventConfig() {
     }
 
     @Getter

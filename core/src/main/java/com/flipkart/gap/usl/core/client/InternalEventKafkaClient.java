@@ -1,6 +1,6 @@
 package com.flipkart.gap.usl.core.client;
 
-import com.flipkart.gap.usl.core.config.EventProcessorConfig;
+import com.flipkart.gap.usl.core.config.InternalEventProcessorConfig;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
@@ -12,25 +12,24 @@ import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.common.TopicPartition;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.stream.Collectors;
 
-/**
- * Created by amarjeet.singh on 13/10/16.
- */
+
 @Singleton
 @Slf4j
-public class KafkaClient {
+public class InternalEventKafkaClient {
     @Inject
-    @Named("eventProcessorConfig")
-    private EventProcessorConfig eventProcessorConfig;
+    @Named("internalEventProcessorConfig")
+    private InternalEventProcessorConfig eventProcessorConfig;
     private Producer<String, byte[]> producer;
     private KafkaConsumer<String, byte[]> consumer;
-    private int partitionCount;
+    private Map<String, Integer> partitionCountMap;
 
-    public KafkaClient() {
+    public InternalEventKafkaClient() {
         System.out.println();
     }
 
@@ -50,17 +49,25 @@ public class KafkaClient {
         consumerProperties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArrayDeserializer");
         consumer = new KafkaConsumer<>(consumerProperties);
         producer = new KafkaProducer<>(props);
-        partitionCount = producer.partitionsFor(eventProcessorConfig.getTopicName()).size();
+        partitionCountMap = new HashMap<>();
+        for (String topicName: eventProcessorConfig.getTopicNames()) {
+            partitionCountMap.put(topicName, producer.partitionsFor(topicName).size());
+        }
+
     }
 
-    public int getPartitionCount() {
-        return partitionCount;
+    public Map<String, Integer> getPartitionCountMap() {
+        return partitionCountMap;
     }
 
-    public Map<Integer, Long> getPartitionOffsets() throws Exception {
+    public int getPartitionCount(String topicName) {
+        return partitionCountMap.get(topicName);
+    }
+
+    public Map<Integer, Long> getPartitionOffsets(String topicName) {
         List<TopicPartition> topicPartitions = new ArrayList<>();
-        for (int i = 0; i < partitionCount; i++) {
-            topicPartitions.add(new TopicPartition(eventProcessorConfig.getTopicName(), i));
+        for (int i = 0; i < partitionCountMap.get(topicName); i++) {
+            topicPartitions.add(new TopicPartition(topicName, i));
         }
         Map<TopicPartition, Long> offsetMap = consumer.beginningOffsets(topicPartitions);
         return offsetMap.entrySet().stream().collect(Collectors.toMap(entry -> entry.getKey().partition(), Map.Entry::getValue));

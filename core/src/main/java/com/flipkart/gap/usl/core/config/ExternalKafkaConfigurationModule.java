@@ -27,8 +27,8 @@ public class ExternalKafkaConfigurationModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(EventProcessorConfig.class).annotatedWith(Names.named("externalKafkaConfig")).toInstance(configuration.getExternalKafkaConfig());
-        bind(EventProcessorConfig.class).annotatedWith(Names.named("eventProcessorConfig")).toInstance(configuration.getEventProcessorConfig());
+        bind(ExternalEventConfig.class).annotatedWith(Names.named("externalEventConfig")).toInstance(configuration.getExternalEventConfig());
+        bind(InternalEventProcessorConfig.class).annotatedWith(Names.named("internalEventProcessorConfig")).toInstance(configuration.getInternalEventProcessorConfig());
         bind(KafkaPublisherDao.class).to(ExternalKafkaPublisherDAOImpl.class);
         bind(ExternalKafkaApplicationConfiguration.class).toInstance(configuration);
     }
