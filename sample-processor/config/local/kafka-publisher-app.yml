@@ -1,92 +1,18 @@
 coreConfig:
-  eventProcessorConfig:
+  externalEventConfig:
     sparkMasterWithPort: local[2]
-    topicName: local-usl-2
+    topicName: user.payments.external
     kafkaBrokerConnection: localhost:9092
     zkHosts: localhost
     zkPort: 2182
     kafkaConfig:
       heartBeatIntervalMS: 600
-  dimensionPackage: com.flipkart.usl.processor.sample
-  mongoConfig:
-    connectionString: localhost:27017
-    dbName: local-usl
-  hbaseConfig:
-    tableName: local-usl-1
-    zookeeperQuorum: localhost:2181
-    parentNode: /hbase
-  cacheConfig:
-    ttlInMinutes: 30
-  applicationResilienceConfig:
-    dimensionReadConfig:
-      bulkheadConfig:
-        maxConcurrentCalls: 100
-        maxWaitDuration: 500
-      circuitBreakerConfig:
-        waitDurationInOpenState: 10000
-        minimumNumberOfCalls: 100
-        slidingWindowSize: 100
-        permittedNumberOfCallsInHalfOpenState: 100
-        slowCallDurationThreshold: 300
-        slowCallRateThreshold: 100
-        failureRateThreshold: 50
-      rateLimiterConfig:
-        limitRefreshPeriod: 1000
-        limitForPeriod: 12000
-        timeoutDuration: 500
-      timeLimiterConfig:
-        timeoutDuration: 500
-    dimensionBulkReadConfig:
-      bulkheadConfig:
-        maxConcurrentCalls: 100
-        maxWaitDuration: 500
-      circuitBreakerConfig:
-        waitDurationInOpenState: 10000
-        minimumNumberOfCalls: 100
-        slidingWindowSize: 100
-        permittedNumberOfCallsInHalfOpenState: 100
-        slowCallDurationThreshold: 500
-        slowCallRateThreshold: 100
-        failureRateThreshold: 50
-      rateLimiterConfig:
-        limitRefreshPeriod: 1000
-        limitForPeriod: 10000
-        timeoutDuration: 500
-      timeLimiterConfig:
-        timeoutDuration: 60000
-    dimensionBulkSaveConfig:
-      bulkheadConfig:
-        maxConcurrentCalls: 100
-        maxWaitDuration: 500
-      circuitBreakerConfig:
-        waitDurationInOpenState: 10000
-        minimumNumberOfCalls: 100
-        slidingWindowSize: 100
-        permittedNumberOfCallsInHalfOpenState: 100
-        slowCallDurationThreshold: 500
-        slowCallRateThreshold: 100
-        failureRateThreshold: 50
-      rateLimiterConfig:
-        limitRefreshPeriod: 1000
-        limitForPeriod: 1000
-        timeoutDuration: 500
-      timeLimiterConfig:
-        timeoutDuration: 60000
-    dimensionDeleteConfig:
-      bulkheadConfig:
-        maxConcurrentCalls: 100
-        maxWaitDuration: 500
-      circuitBreakerConfig:
-        waitDurationInOpenState: 10000
-        minimumNumberOfCalls: 100
-        slidingWindowSize: 100
-        permittedNumberOfCallsInHalfOpenState: 100
-        slowCallDurationThreshold: 500
-        slowCallRateThreshold: 100
-        failureRateThreshold: 50
-      rateLimiterConfig:
-        limitRefreshPeriod: 1000
-        limitForPeriod: 10
-        timeoutDuration: 500
-      timeLimiterConfig:
-        timeoutDuration: 1000
+  internalEventProcessorConfig:
+    sparkMasterWithPort: local[2]
+    topicNames:
+     - user.payments
+    kafkaBrokerConnection: localhost:9092
+    zkHosts: localhost
+    zkPort: 2182
+    kafkaConfig:
+      heartBeatIntervalMS: 600
