@@ -20,7 +20,6 @@ public class SampleProcessorApp {
     private static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
 
     public static void main(String[] args) throws ProcessingException, IOException {
-
         JmxReporterMetricRegistry.initialiseJmxMetricRegistry();
         // Initialise Document Registries if any.
         SparkHelper.bootstrap();
