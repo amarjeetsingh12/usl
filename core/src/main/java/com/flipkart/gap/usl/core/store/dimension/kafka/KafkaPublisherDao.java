@@ -28,6 +28,7 @@ public class KafkaPublisherDao {
 
     public static final String KAFKA_PRODUCER_WAIT = "kafkaProducerWait";
     public static final String KAFKA_SEND_EVENTS_SYNC = "kafkaSendEventsSync";
+    public static final String KAFKA_SEND_BATCH = "kafkaSendBatch";
     protected LinkedBlockingQueue<Producer<String, byte[]>> producers;
     protected ExecutorService executorServicePool;
     protected Properties props;
@@ -49,7 +50,7 @@ public class KafkaPublisherDao {
 
         @Override
         public Boolean call() {
-            try (Timer.Context context = JmxReporterMetricRegistry.getMetricRegistry().timer("KafkaSendBatch").time()) {
+            try (Timer.Context context = JmxReporterMetricRegistry.getMetricRegistry().timer(KAFKA_SEND_BATCH).time()) {
                 sendRecordsSync(producerRecords);
                 return true;
             } catch (KafkaProducerException ke) {
@@ -86,7 +87,7 @@ public class KafkaPublisherDao {
         }
     }
 
-    public List<ProducerRecord<String, byte[]>> getProducerRecords(List<KafkaProducerRecord> producerRecordList) throws KafkaProducerException {
+    private List<ProducerRecord<String, byte[]>> getProducerRecords(List<KafkaProducerRecord> producerRecordList) throws KafkaProducerException {
         List<ProducerRecord<String, byte[]>> records = new ArrayList<>();
         producerRecordList.
                 forEach(producerRecord ->
