@@ -39,8 +39,7 @@ public class DimensionPublishStage extends ProcessingStage {
             while (dimensionIterator.hasNext()) {
                 Dimension dimension = dimensionIterator.next();
                 if (configuration.getDimensionsToBePublished() != null && configuration.getDimensionsToBePublished().contains(dimension.getDimensionSpecs().name()))
-                    producerRecordList.add(createProducerRecord(dimension.getDimensionSpecs().name(),
-                        ObjectMapperFactory.getMapper().writeValueAsBytes(dimension)));
+                    producerRecordList.add(createProducerRecord(dimension));
             }
             kafkaPublisherDao.sendEventsSync(producerRecordList);
 
@@ -49,9 +48,13 @@ public class DimensionPublishStage extends ProcessingStage {
         }
     }
 
-    private ProducerRecord<String,byte[]> createProducerRecord(String topic, byte[] record) throws JsonProcessingException {
+    private ProducerRecord<String,byte[]> createProducerRecord(Dimension dimension) throws JsonProcessingException {
 
-        return new ProducerRecord<>(topic,record);
+        String dimensionName = dimension.getDimensionSpecs().name();
+        String partitionKey = dimensionName + "##" + dimension.getEntityId();
+        byte[] value = ObjectMapperFactory.getMapper().writeValueAsBytes(dimension);
+        return new ProducerRecord<>(dimensionName, partitionKey, value);
     }
+
 
 }

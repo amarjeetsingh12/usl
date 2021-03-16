@@ -29,9 +29,7 @@ public class InternalEventKafkaClient {
     private KafkaConsumer<String, byte[]> consumer;
     private Map<String, Integer> partitionCountMap;
 
-    public InternalEventKafkaClient() {
-        System.out.println();
-    }
+    public InternalEventKafkaClient() { }
 
     @Inject
     public void init() {

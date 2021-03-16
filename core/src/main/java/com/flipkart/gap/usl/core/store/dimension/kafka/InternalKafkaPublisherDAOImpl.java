@@ -53,10 +53,6 @@ public class InternalKafkaPublisherDAOImpl extends KafkaPublisherDao{
         }
     }
 
-    public void publish(String topic, byte[] record) throws Exception {
-        producer.send(createProducerRecord(topic, record)).get();
-    }
-
     private ProducerRecord<String,byte[]> createProducerRecord(String topic, byte[] record) throws JsonProcessingException {
 
         return new ProducerRecord<>(topic,record);

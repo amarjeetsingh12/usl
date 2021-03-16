@@ -8,9 +8,6 @@ import javax.validation.constraints.Min;
 import java.io.Serializable;
 import java.util.List;
 
-/**
- * Created by amarjeet.singh on 18/10/16.
- */
 @Getter
 @Setter
 public class InternalEventProcessorConfig implements Serializable {
