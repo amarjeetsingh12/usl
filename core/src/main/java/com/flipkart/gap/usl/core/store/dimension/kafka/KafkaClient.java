@@ -14,9 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-/**
- * Created by amarjeet.singh on 13/10/16.
- */
 @Singleton
 @Slf4j
 public class KafkaClient {
