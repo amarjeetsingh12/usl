@@ -39,7 +39,7 @@ public class DimensionPublishStage extends ProcessingStage {
             while (dimensionIterator.hasNext()) {
                 Dimension dimension = dimensionIterator.next();
                 if (configuration.getDimensionsToBePublished() != null && configuration.getDimensionsToBePublished().contains(dimension.getDimensionSpecs().name()))
-                    producerRecordList.add(createProducerRecord(dimension.getDimensionSpecs().name()+"1",
+                    producerRecordList.add(createProducerRecord(dimension.getDimensionSpecs().name(),
                         ObjectMapperFactory.getMapper().writeValueAsBytes(dimension)));
             }
             kafkaPublisherDao.sendEventsSync(producerRecordList);
