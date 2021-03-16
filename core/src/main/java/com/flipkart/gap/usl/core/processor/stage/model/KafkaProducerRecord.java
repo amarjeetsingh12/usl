@@ -12,5 +12,6 @@ import java.util.List;
 public class KafkaProducerRecord implements Serializable {
 
     private String topicName;
+    private String key;
     private byte[] value;
 }
