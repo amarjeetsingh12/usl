@@ -9,13 +9,13 @@ import lombok.Data;
 import java.io.Serializable;
 
 @Data
-public class ExternalKafkaApplicationConfiguration implements Serializable {
+public class KafkaIngestionApplicationConfiguration implements Serializable {
 
     private EventProcessorConfig eventProcessorConfig;
     private KafkaIngestionConfig kafkaIngestionConfig;
 
     @JsonCreator
-    public ExternalKafkaApplicationConfiguration(
+    public KafkaIngestionApplicationConfiguration(
             @JsonProperty("externalKafkaConfig") KafkaIngestionConfig kafkaIngestionConfig,
             @JsonProperty("eventProcessorConfig") EventProcessorConfig eventProcessorConfig) {
         this.kafkaIngestionConfig = kafkaIngestionConfig;

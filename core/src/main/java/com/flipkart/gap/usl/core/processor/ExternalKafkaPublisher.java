@@ -5,7 +5,7 @@ import com.flipkart.gap.usl.core.manager.PartitionManager;
 import com.flipkart.gap.usl.core.config.EventProcessorConfig;
 import com.flipkart.gap.usl.core.config.KafkaIngestionConfig;
 import com.flipkart.gap.usl.core.config.KafkaIngestionConfigurationModule;
-import com.flipkart.gap.usl.core.config.v2.ExternalKafkaApplicationConfiguration;
+import com.flipkart.gap.usl.core.config.v2.KafkaIngestionApplicationConfiguration;
 import com.flipkart.gap.usl.core.constant.Constants;
 import com.flipkart.gap.usl.core.helper.SparkHelper;
 import com.flipkart.gap.usl.core.processor.exception.ProcessingException;
@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class ExternalKafkaPublisher implements Serializable {
 
     @Inject
-    private ExternalKafkaApplicationConfiguration applicationConfiguration;
+    private KafkaIngestionApplicationConfiguration applicationConfiguration;
     @Inject
     private transient OffsetManager offsetManager;
     @Inject
