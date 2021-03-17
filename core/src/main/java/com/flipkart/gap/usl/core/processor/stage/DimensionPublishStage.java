@@ -22,6 +22,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DimensionPublishStage extends ProcessingStage {
 
+    private final String DIMENSION_NAME_ENTITY_ID_DELIMITER = "##";
+
     @Inject
     private KafkaPublisherDao kafkaPublisherDao;
 
@@ -52,7 +54,7 @@ public class DimensionPublishStage extends ProcessingStage {
     private KafkaProducerRecord createProducerRecord(Dimension dimension) throws JsonProcessingException {
 
         String dimensionName = dimension.getDimensionSpecs().name();
-        String partitionKey = dimensionName + "##" + dimension.getEntityId();
+        String partitionKey = dimensionName + DIMENSION_NAME_ENTITY_ID_DELIMITER + dimension.getEntityId();
         byte[] value = ObjectMapperFactory.getMapper().writeValueAsBytes(dimension);
 
         /*
