@@ -22,8 +22,6 @@ public class KafkaClient {
     private EventProcessorConfig eventProcessorConfig;
     private KafkaConsumer<String, byte[]> consumer;
 
-    public KafkaClient() { }
-
     @Inject
     public void init() {
         Properties consumerProperties = new Properties();
