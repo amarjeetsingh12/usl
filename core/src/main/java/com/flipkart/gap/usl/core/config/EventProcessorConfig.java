@@ -42,14 +42,7 @@ public class EventProcessorConfig implements Serializable {
     private String blockInterval = "500ms";
     private String environment;
     private int offsetSaveThreads = 10;
-    private int producersCount = 1;
-    private int requestTimeout = 30000;
-    private int maxBlockMS = 60000;
-    private int maxIdleTime = 540000;
-    private int lingerTimeInMs = 100;
-    private int retry = 0;
     private KafkaConfig kafkaConfig;
-    private int executorServicePoolSize = 10;
 
     public EventProcessorConfig() {
     }
