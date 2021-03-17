@@ -41,7 +41,8 @@ public class DimensionPublishStage extends ProcessingStage {
                 if (configuration.getDimensionsToBePublished() != null && configuration.getDimensionsToBePublished().contains(dimension.getDimensionSpecs().name()))
                     producerRecordList.add(createProducerRecord(dimension));
             }
-            kafkaPublisherDao.sendRecords(producerRecordList);
+            if (!producerRecordList.isEmpty())
+                kafkaPublisherDao.sendRecords(producerRecordList);
 
         } catch (Exception e) {
             throw new StageProcessingException(e);
