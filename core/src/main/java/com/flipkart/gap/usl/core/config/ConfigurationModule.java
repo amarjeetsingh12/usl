@@ -3,7 +3,6 @@ package com.flipkart.gap.usl.core.config;
 import com.flipkart.gap.usl.core.config.resilience.ResilienceConfig;
 import com.flipkart.gap.usl.core.store.dimension.DimensionStoreDAO;
 import com.flipkart.gap.usl.core.store.dimension.hbase.HBaseDimensionStoreDAO;
-import com.flipkart.gap.usl.core.store.dimension.kafka.InternalKafkaPublisherDAOImpl;
 import com.flipkart.gap.usl.core.store.dimension.kafka.KafkaPublisherDao;
 import com.flipkart.gap.usl.core.store.event.EventMappingStore;
 import com.flipkart.gap.usl.core.store.event.EventTypeStore;
@@ -54,6 +53,6 @@ public class ConfigurationModule extends AbstractModule {
         bind(ApplicationConfiguration.class).toInstance(configuration);
         bind(String.class).annotatedWith(Names.named("dimensionPackage")).toInstance(configuration.getDimensionPackage());
         bind(SyncEventProcessor.class).to(SyncEventProcessorImpl.class);
-        bind(KafkaPublisherDao.class).to(InternalKafkaPublisherDAOImpl.class);
+        bind(KafkaIngestionConfig.class).annotatedWith(Names.named("kafkaIngestionConfig")).toInstance(configuration.getKafkaIngestionConfig());
     }
 }

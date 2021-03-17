@@ -3,8 +3,8 @@ package com.flipkart.gap.usl.core.processor;
 import com.flipkart.gap.usl.core.manager.OffsetManager;
 import com.flipkart.gap.usl.core.manager.PartitionManager;
 import com.flipkart.gap.usl.core.config.EventProcessorConfig;
-import com.flipkart.gap.usl.core.config.ExternalKafkaConfig;
-import com.flipkart.gap.usl.core.config.ExternalKafkaConfigurationModule;
+import com.flipkart.gap.usl.core.config.KafkaIngestionConfig;
+import com.flipkart.gap.usl.core.config.KafkaIngestionConfigurationModule;
 import com.flipkart.gap.usl.core.config.v2.ExternalKafkaApplicationConfiguration;
 import com.flipkart.gap.usl.core.constant.Constants;
 import com.flipkart.gap.usl.core.helper.SparkHelper;
@@ -50,8 +50,8 @@ public class ExternalKafkaPublisher implements Serializable {
     @Inject
     private transient PartitionManager partitionManager;
     @Inject
-    @Named("externalKafkaConfig")
-    private ExternalKafkaConfig externalKafkaConfig;
+    @Named("kafkaIngestionConfig")
+    private KafkaIngestionConfig kafkaIngestionConfig;
 
     @Inject
     @Named("eventProcessorConfig")
@@ -145,14 +145,15 @@ public class ExternalKafkaPublisher implements Serializable {
 
                     JavaRDD<KafkaProducerRecord> publishedRDD = consumerRecordJavaRDD.map(consumerRecord -> {
                         SparkHelper.bootstrap();
-                        return new KafkaProducerRecord(externalKafkaConfig.getTopicName(), consumerRecord.key().toString(), consumerRecord.value());
+                        return new KafkaProducerRecord(kafkaIngestionConfig.getTopicName(), consumerRecord.key().toString(), consumerRecord.value());
                     });
 
                     publishedRDD.foreachPartition(rdd -> {
-                        KafkaPublisherDao kafkaPublisherDao = ExternalKafkaConfigurationModule.getInjector(applicationConfiguration).getInstance(KafkaPublisherDao.class);
+
+                        KafkaPublisherDao kafkaPublisherDao = KafkaIngestionConfigurationModule.getInjector(applicationConfiguration).getInstance(KafkaPublisherDao.class);
                         List<KafkaProducerRecord> producerRecordList = new ArrayList<>();
-                        while (rdd.hasNext())
-                            producerRecordList.add((rdd.next()));
+                        rdd.forEachRemaining(producerRecordList::add);
+
                         kafkaPublisherDao.sendRecords(producerRecordList);
                     });
 

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.flipkart.gap.usl.core.config.CacheConfig;
 import com.flipkart.gap.usl.core.config.EventProcessorConfig;
 import com.flipkart.gap.usl.core.config.HbaseConfig;
+import com.flipkart.gap.usl.core.config.KafkaIngestionConfig;
 import com.flipkart.gap.usl.core.config.MongoConfig;
 import com.flipkart.gap.usl.core.config.resilience.ResilienceConfig;
 import lombok.Data;
@@ -20,6 +21,7 @@ import java.util.Map;
 public class ApplicationConfiguration implements Serializable {
 
     private EventProcessorConfig eventProcessorConfig;
+    private KafkaIngestionConfig kafkaIngestionConfig;
     private Map<String,ResilienceConfig> applicationResilienceConfig;
     private String dimensionPackage;
     private CacheConfig cacheConfig;
@@ -30,6 +32,7 @@ public class ApplicationConfiguration implements Serializable {
     @JsonCreator
     public ApplicationConfiguration(
             @JsonProperty("eventProcessorConfig") EventProcessorConfig eventProcessorConfig,
+            @JsonProperty("kafkaIngestionConfig") KafkaIngestionConfig kafkaIngestionConfig,
             @JsonProperty("applicationResilienceConfig") Map<String,ResilienceConfig> applicationResilienceConfig,
             @JsonProperty("dimensionPackage") String dimensionPackage,
             @JsonProperty("cacheConfig") CacheConfig cacheConfig,
@@ -38,6 +41,7 @@ public class ApplicationConfiguration implements Serializable {
             @JsonProperty("dimensionsToBePublished") List<String> dimensionsToBePublished
     ) {
         this.eventProcessorConfig = eventProcessorConfig;
+        this.kafkaIngestionConfig = kafkaIngestionConfig;
         this.dimensionPackage = dimensionPackage;
         this.cacheConfig = cacheConfig;
         this.mongoConfig = mongoConfig;

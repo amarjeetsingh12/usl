@@ -10,9 +10,8 @@ import java.util.List;
 
 @Getter
 @Setter
-public class ExternalKafkaConfig implements Serializable {
+public class KafkaIngestionConfig implements Serializable {
 
-    @NotBlank
     private String topicName;
 
     @NotBlank
@@ -27,21 +26,4 @@ public class ExternalKafkaConfig implements Serializable {
     private int lingerTimeInMs = 100;
     private int retry = 0;
     private int executorServicePoolSize = 10;
-    private KafkaConfig kafkaConfig;
-
-    public ExternalKafkaConfig() {
-    }
-
-    @Getter
-    @Setter
-    public static class KafkaConfig implements Serializable {
-        private String groupId = "spark_processor";
-        private String autoOffsetReset = "latest";
-        private boolean enableAutoCommit = false;
-        private int fetchMaxWait = 100;
-        private int fetchMinBytes = 1;
-        private int heartBeatIntervalMS = 500;
-        private int sessionTimeoutMS = 1000;
-        private int requestTimeoutMS = 1500;
-    }
 }

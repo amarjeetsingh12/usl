@@ -3,7 +3,7 @@ package com.flipkart.gap.usl.core.config.v2;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.flipkart.gap.usl.core.config.EventProcessorConfig;
-import com.flipkart.gap.usl.core.config.ExternalKafkaConfig;
+import com.flipkart.gap.usl.core.config.KafkaIngestionConfig;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -12,20 +12,15 @@ import java.io.Serializable;
 public class ExternalKafkaApplicationConfiguration implements Serializable {
 
     private EventProcessorConfig eventProcessorConfig;
-    private ExternalKafkaConfig externalKafkaConfig;
-
+    private KafkaIngestionConfig kafkaIngestionConfig;
 
     @JsonCreator
     public ExternalKafkaApplicationConfiguration(
-            @JsonProperty("externalKafkaConfig") ExternalKafkaConfig externalKafkaConfig,
-            @JsonProperty("eventProcessorConfig") EventProcessorConfig eventProcessorConfig
-    ) {
-        this.externalKafkaConfig = externalKafkaConfig;
+            @JsonProperty("externalKafkaConfig") KafkaIngestionConfig kafkaIngestionConfig,
+            @JsonProperty("eventProcessorConfig") EventProcessorConfig eventProcessorConfig) {
+        this.kafkaIngestionConfig = kafkaIngestionConfig;
         this.eventProcessorConfig = eventProcessorConfig;
-        this.validate();
     }
 
-    private void validate() {
 
-    }
 }

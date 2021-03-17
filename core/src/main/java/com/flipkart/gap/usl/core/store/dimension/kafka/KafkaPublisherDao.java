@@ -1,15 +1,21 @@
 package com.flipkart.gap.usl.core.store.dimension.kafka;
 
 import com.codahale.metrics.Timer;
+import com.flipkart.gap.usl.core.config.KafkaIngestionConfig;
 import com.flipkart.gap.usl.core.metric.JmxReporterMetricRegistry;
 import com.flipkart.gap.usl.core.processor.stage.model.KafkaProducerRecord;
 import com.flipkart.gap.usl.core.store.exception.KafkaProducerException;
 import com.google.common.collect.Lists;
+import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.common.record.CompressionType;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +23,7 @@ import java.util.Properties;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -29,13 +36,43 @@ public class KafkaPublisherDao {
     public static final String KAFKA_PRODUCER_WAIT = "kafkaProducerWait";
     public static final String KAFKA_SEND_EVENTS_SYNC = "kafkaSendEventsSync";
     public static final String KAFKA_SEND_BATCH = "kafkaSendBatch";
+    private static final String executorSvsErrorMessage = "Tried using Executor service but is already shutdown or not initiated. Can't continue. Check eventProcessorConfig";
+
     protected LinkedBlockingQueue<Producer<String, byte[]>> producers;
     protected ExecutorService executorServicePool;
     protected Properties props;
 
-    private static final String executorSvsErrorMessage = "Tried using Executor service but is already shutdown or not initiated. Can't continue. Check eventProcessorConfig";
+    @Inject
+    @Named("kafkaIngestionConfig")
+    private KafkaIngestionConfig kafkaIngestionConfig;
+    @Inject
+    public void init() {
+        props = new Properties();
 
-    public KafkaPublisherDao() {
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaIngestionConfig.getKafkaBrokerConnection());
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.ACKS_CONFIG, "all");
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.RETRIES_CONFIG, kafkaIngestionConfig.getRetry());
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.BATCH_SIZE_CONFIG, kafkaIngestionConfig.getBatchSize());
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.LINGER_MS_CONFIG, kafkaIngestionConfig.getLingerTimeInMs());
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, kafkaIngestionConfig.getRequestTimeout());
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.MAX_BLOCK_MS_CONFIG, kafkaIngestionConfig.getMaxBlockMS());
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.CONNECTIONS_MAX_IDLE_MS_CONFIG, kafkaIngestionConfig.getMaxIdleTime());
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArraySerializer");
+        props.put(org.apache.kafka.clients.producer.ProducerConfig.COMPRESSION_TYPE_CONFIG, CompressionType.GZIP.name);
+
+
+        try {
+            producers = new LinkedBlockingQueue<>(kafkaIngestionConfig.getProducersCount());
+            for (int i = 0; i < kafkaIngestionConfig.getProducersCount(); i++) {
+                producers.add(new KafkaProducer<>(props));
+            }
+            if (kafkaIngestionConfig.getExecutorServicePoolSize() != 0) {
+                executorServicePool = Executors.newFixedThreadPool(kafkaIngestionConfig.getExecutorServicePoolSize());
+            }
+        } catch (Exception e) {
+            log.error("Exception making producer: {}", ExceptionUtils.getMessage(e), e);
+        }
     }
     /*
     Nested Callable class
