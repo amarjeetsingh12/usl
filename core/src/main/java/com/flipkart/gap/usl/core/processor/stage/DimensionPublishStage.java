@@ -36,13 +36,17 @@ public class DimensionPublishStage extends ProcessingStage {
 
             final Set<Dimension> dimensionSet = processingStageData.getDimensionMutateRequests().stream().map(DimensionMutateRequest::getDimension).collect(Collectors.toSet());
 
-            List<KafkaProducerRecord> producerRecordList = new ArrayList();
-            Iterator<Dimension> dimensionIterator = dimensionSet.iterator();
-            while (dimensionIterator.hasNext()) {
-                Dimension dimension = dimensionIterator.next();
-                if (configuration.getDimensionsToBePublished() != null && configuration.getDimensionsToBePublished().contains(dimension.getDimensionSpecs().name()))
-                    producerRecordList.add(createProducerRecord(dimension));
-            }
+            List<KafkaProducerRecord> producerRecordList = dimensionSet.stream()
+                    .filter(dimension -> configuration.getDimensionsToBePublished().contains(dimension.getDimensionSpecs().name()))
+                    .map(dimension -> {
+                        try {
+                            return createProducerRecord(dimension);
+                        } catch (JsonProcessingException e) {
+                            throw new StageProcessingException(e);
+                        }
+                    })
+                    .collect(Collectors.toList());
+
             if (!producerRecordList.isEmpty())
                 kafkaPublisherDao.sendRecords(producerRecordList);
 

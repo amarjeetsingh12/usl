@@ -43,14 +43,14 @@ public class PartitionManager {
         return partitionCountMap;
     }
 
-    public Map<Integer, Long> getPartitionOffsets(String topicName) {
+    public Map<Integer, Long> getEarliestOffsets(String topicName) {
         List<TopicPartition> topicPartitions = new ArrayList<>();
         int partitionCount = getPartitionCount(topicName);
         for (int i = 0; i < partitionCount; i++) {
             topicPartitions.add(new TopicPartition(topicName, i));
         }
 
-        Map<TopicPartition, Long> offsetMap = kafkaClient.getPartitionOffsets(topicPartitions);
+        Map<TopicPartition, Long> offsetMap = kafkaClient.getEarliestOffsets(topicPartitions);
 
         return offsetMap.entrySet().stream().collect(Collectors.toMap(entry -> entry.getKey().partition(), Map.Entry::getValue));
 

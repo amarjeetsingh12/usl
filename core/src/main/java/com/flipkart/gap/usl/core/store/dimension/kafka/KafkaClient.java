@@ -37,7 +37,7 @@ public class KafkaClient {
         return consumer.partitionsFor(topicName);
     }
 
-    public Map<TopicPartition, Long> getPartitionOffsets(List<TopicPartition> topicPartitions) {
+    public Map<TopicPartition, Long> getEarliestOffsets(List<TopicPartition> topicPartitions) {
         return consumer.beginningOffsets(topicPartitions);
     }
 

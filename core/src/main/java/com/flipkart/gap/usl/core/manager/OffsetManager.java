@@ -147,8 +147,8 @@ public class OffsetManager {
 
     private Long getEarliestOffset(String topicName, int partition) {
         if (offsetMap.get(topicName) == null) {
-            Map<Integer, Long> partitionOffsets = partitionManager.getPartitionOffsets(topicName);
-            offsetMap.put(topicName, partitionOffsets);
+            Map<Integer, Long> earliestOffsets = partitionManager.getEarliestOffsets(topicName);
+            offsetMap.put(topicName, earliestOffsets);
         }
 
         return offsetMap.get(topicName).get(partition);
