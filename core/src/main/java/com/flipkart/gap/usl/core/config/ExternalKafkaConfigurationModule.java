@@ -24,7 +24,6 @@ public class ExternalKafkaConfigurationModule extends AbstractModule {
         this.configuration = configuration;
     }
 
-
     @Override
     protected void configure() {
         bind(ExternalKafkaConfig.class).annotatedWith(Names.named("externalKafkaConfig")).toInstance(configuration.getExternalKafkaConfig());

@@ -19,7 +19,6 @@ import java.util.Map;
 @Data
 public class ApplicationConfiguration implements Serializable {
 
-    private EventProcessorConfig externalKafkaConfig;
     private EventProcessorConfig eventProcessorConfig;
     private Map<String,ResilienceConfig> applicationResilienceConfig;
     private String dimensionPackage;
