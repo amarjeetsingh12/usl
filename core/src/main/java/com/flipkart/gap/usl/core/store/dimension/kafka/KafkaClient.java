@@ -22,9 +22,7 @@ public class KafkaClient {
     private EventProcessorConfig eventProcessorConfig;
     private KafkaConsumer<String, byte[]> consumer;
 
-    public KafkaClient() {
-        System.out.println();
-    }
+    public KafkaClient() { }
 
     @Inject
     public void init() {
