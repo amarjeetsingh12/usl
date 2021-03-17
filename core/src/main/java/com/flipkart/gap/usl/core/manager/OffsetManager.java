@@ -34,7 +34,7 @@ public class OffsetManager {
     @Inject
     @Named("eventProcessorConfig")
     private EventProcessorConfig eventProcessorConfig;
-    private Map<Integer, Long> offsetMap;
+    private Map<String, Map<Integer, Long>> offsetMap = new HashMap<>();
     private ExecutorService executorService;
     private static final int MAX_OFFSET_RETRY = 3;
 
@@ -145,11 +145,13 @@ public class OffsetManager {
         return topicPartitionMap;
     }
 
-    private Long getEarliestOffset(String topicName, int partition) throws Exception {
-        if (offsetMap == null) {
-            offsetMap = partitionManager.getPartitionOffsets(topicName);
+    private Long getEarliestOffset(String topicName, int partition) {
+        if (offsetMap.get(topicName) == null) {
+            Map<Integer, Long> partitionOffsets = partitionManager.getPartitionOffsets(topicName);
+            offsetMap.put(topicName, partitionOffsets);
         }
-        return offsetMap.get(partition);
+
+        return offsetMap.get(topicName).get(partition);
     }
 
     private static String getTopicPath(final String topicName) {
