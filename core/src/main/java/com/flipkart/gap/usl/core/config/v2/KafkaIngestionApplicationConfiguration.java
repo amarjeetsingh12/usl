@@ -16,7 +16,7 @@ public class KafkaIngestionApplicationConfiguration implements Serializable {
 
     @JsonCreator
     public KafkaIngestionApplicationConfiguration(
-            @JsonProperty("externalKafkaConfig") KafkaIngestionConfig kafkaIngestionConfig,
+            @JsonProperty("kafkaIngestionConfig") KafkaIngestionConfig kafkaIngestionConfig,
             @JsonProperty("eventProcessorConfig") EventProcessorConfig eventProcessorConfig) {
         this.kafkaIngestionConfig = kafkaIngestionConfig;
         this.eventProcessorConfig = eventProcessorConfig;
