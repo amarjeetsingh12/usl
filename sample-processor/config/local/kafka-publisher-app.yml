@@ -1,0 +1,13 @@
+coreConfig:
+  kafkaIngestionConfig:
+    topicName: user.payments.external
+    kafkaBrokerConnection: localhost:9092
+  eventProcessorConfig:
+    sparkMasterWithPort: local[2]
+    topicNames:
+     - user.payments
+    kafkaBrokerConnection: localhost:9092
+    zkHosts: localhost
+    zkPort: 2182
+    kafkaConfig:
+      heartBeatIntervalMS: 600
