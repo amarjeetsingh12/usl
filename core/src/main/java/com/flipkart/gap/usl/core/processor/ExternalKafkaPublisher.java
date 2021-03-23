@@ -149,11 +149,10 @@ public class ExternalKafkaPublisher implements Serializable {
                     });
 
                     publishedRDD.foreachPartition(rdd -> {
-
+                        SparkHelper.bootstrap();
                         KafkaPublisherDao kafkaPublisherDao = KafkaIngestionConfigurationModule.getInjector(applicationConfiguration).getInstance(KafkaPublisherDao.class);
                         List<KafkaProducerRecord> producerRecordList = new ArrayList<>();
                         rdd.forEachRemaining(producerRecordList::add);
-
                         kafkaPublisherDao.sendRecords(producerRecordList);
                     });
 
