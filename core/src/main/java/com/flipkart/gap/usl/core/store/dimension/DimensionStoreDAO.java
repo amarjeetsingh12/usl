@@ -16,13 +16,9 @@ public interface DimensionStoreDAO {
 
     public <T extends Dimension> T getDimension(DimensionDBRequest dimensionReadDBRequest) throws DimensionFetchException;
 
-    public <T extends Dimension> T getDimension(DimensionDBRequest dimensionReadDBRequest, String poolName) throws DimensionFetchException;
-
-    public <T extends Dimension> T getDimension(DimensionDBRequest dimensionReadDBRequest, String poolName, boolean useCache) throws DimensionFetchException;
-
     public Map<DimensionDBRequest, Dimension> bulkGet(Set<DimensionDBRequest> dimensionReadDBRequests) throws DimensionFetchException;
 
     public void bulkSave(Set<Dimension> dimensions) throws DimensionPersistRuntimeException, DimensionPersistException;
 
-    void deleteDimension(DimensionDBRequest dimensionReadDBRequest, String poolName) throws DimensionDeleteException;
+    void deleteDimension(DimensionDBRequest dimensionReadDBRequest) throws DimensionDeleteException;
 }

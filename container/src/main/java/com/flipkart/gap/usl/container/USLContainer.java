@@ -4,6 +4,14 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.util.ContextInitializer;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.flipkart.gap.usl.container.config.ContainerConfigurationModule;
+import com.flipkart.gap.usl.container.config.USLBootstrapConfig;
+import com.flipkart.gap.usl.container.filters.RequestFilter;
+import com.flipkart.gap.usl.container.resource.*;
+import com.flipkart.gap.usl.core.config.ConfigurationModule;
+import com.flipkart.gap.usl.core.metric.JmxReporterMetricRegistry;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
@@ -11,17 +19,12 @@ import io.federecio.dropwizard.swagger.SwaggerBundle;
 import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
-import java.util.Random;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by ajaysingh on 05/10/16.
  */
 @Slf4j
-public abstract class USLContainer extends Application<USLBootstrapConfig> {
-    private static Random random = new Random();
+public class USLContainer extends Application<USLBootstrapConfig> {
 
     @Override
     public void initialize(Bootstrap<USLBootstrapConfig> bootstrap) {
@@ -39,12 +42,19 @@ public abstract class USLContainer extends Application<USLBootstrapConfig> {
         context.reset();
         ContextInitializer initializer = new ContextInitializer(context);
         initializer.autoConfig();
+        Injector injector = Guice.createInjector(new ConfigurationModule(uslBootstrapConfig.getCoreConfig()),
+                new ContainerConfigurationModule(uslBootstrapConfig));
         environment.getObjectMapper().enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         environment.getObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        registerResources(environment);
+        JmxReporterMetricRegistry.initialiseJmxMetricRegistry();
+        environment.jersey().register(injector.getInstance(DimensionDeletionResource.class));
+        environment.jersey().register(injector.getInstance(EventIngestorResource.class));
+        environment.jersey().register(injector.getInstance(HealthCheckResource.class));
+        environment.jersey().register(injector.getInstance(RetrievalResource.class));
+        environment.jersey().register(injector.getInstance(RequestFilter.class));
+        environment.jersey().register(injector.getInstance(EventResource.class));
+        environment.jersey().register(injector.getInstance(EventMappingResource.class));
         addHealthCheck(environment);
-        addFilters(environment);
-        attachGCHack();
     }
 
     protected void addHealthCheck(Environment environment) {
@@ -53,23 +63,4 @@ public abstract class USLContainer extends Application<USLBootstrapConfig> {
         environment.jersey().register(healthCheck);
     }
 
-    protected abstract void registerResources(Environment environment);
-
-    protected abstract void addFilters(Environment environment) ;
-
-
-    private void attachGCHack() {
-        int startOffset = random.nextInt(1000);
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(() -> {
-            try {
-                long startTime = System.currentTimeMillis();
-                System.gc();
-                log.info("GC ran successfully in {} ms", (System.currentTimeMillis() - startTime));
-            } catch (Throwable throwable) {
-                log.error("Exception in calling gc ", throwable);
-            }
-        }, startOffset, 3600, TimeUnit.SECONDS);
-        log.info("GC Hack attached with offset {}", startOffset);
-    }
 }

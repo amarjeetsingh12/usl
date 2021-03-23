@@ -1,6 +1,6 @@
 package com.flipkart.gap.usl.container.exceptions;
 
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 
 public class InvalidRequestException extends ServingLayerException {
     public InvalidRequestException() {

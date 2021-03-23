@@ -9,9 +9,8 @@ public class Constants {
     public static final String LOCAL_ENVIRONEMT =  "local";
     public static String CONSUMER_PATH = "/consumers/usl-spark-worker";
     public static String OFFSET_PATH = String.format("%s/%s", CONSUMER_PATH, "offsets");
-    public static final String DEFAULT_USL_CLIENT = "<your-client-name>";
-    public static final String CLIENT_NAME_PROPERTY_IDENTIFIER = "gap.usl.clientId";
-    public static final String ENVIRONMENT_NAME_PROPERTY_IDENTIFIER = "gap.usl.environment";
+    public static final String XPATH = "xPath";
+    public static final String ENTITY_ID = "entityId";
 
     public static class Metrics{
         public static String SUCCESS_METER="EVENT_SUCCESS";

@@ -6,6 +6,7 @@ import org.hibernate.validator.constraints.NotBlank;
 
 import javax.validation.constraints.Min;
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * Created by amarjeet.singh on 18/10/16.
@@ -25,22 +26,37 @@ public class EventProcessorConfig implements Serializable {
     @Min(1)
     private int dimensionProcessingBatchSize = 50;
     @NotBlank
-    private String topicName;
+    private List<String> topicNames;
     @NotBlank
     private String kafkaBrokerConnection;
-    @NotBlank
-    private String checkpointDirectory;
+    private String backPressureInitialRate = "20000";
     @NotBlank
     private String zkHosts;
     @NotBlank
     private int zkPort = 2181;
     @NotBlank
     private String zkRoot = "/";
+    private String executorExtraJavaOpts = "";
+    private String executorMemory = "1g";
+    private int executorCores = 1;
     private String blockInterval = "500ms";
     private String environment;
-    private int offsetSaveThreads=10;
+    private int offsetSaveThreads = 10;
+    private KafkaConfig kafkaConfig;
 
     public EventProcessorConfig() {
     }
 
+    @Getter
+    @Setter
+    public static class KafkaConfig implements Serializable {
+        private String groupId = "spark_processor";
+        private String autoOffsetReset = "latest";
+        private boolean enableAutoCommit = false;
+        private int fetchMaxWait = 100;
+        private int fetchMinBytes = 1;
+        private int heartBeatIntervalMS = 500;
+        private int sessionTimeoutMS = 1000;
+        private int requestTimeoutMS = 1500;
+    }
 }

@@ -1,5 +1,7 @@
 package com.flipkart.gap.usl.container.resource;
 
+import com.flipkart.gap.usl.container.responseobjects.DimensionNotFoundResponse;
+import com.flipkart.gap.usl.container.responseobjects.ErrorResponse;
 import com.google.inject.Inject;
 
 import com.codahale.metrics.annotation.Timed;
@@ -7,7 +9,7 @@ import com.flipkart.gap.usl.container.exceptions.ServingLayerException;
 import com.flipkart.gap.usl.core.model.dimension.Dimension;
 
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.httpclient.HttpStatus;
+import org.apache.http.HttpStatus;
 
 import java.util.Collection;
 import java.util.List;
@@ -28,14 +30,15 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
+import com.flipkart.gap.usl.container.entry.Request;
 
 /**
  * Created by ankesh.maheshwari on 28/11/16.
  */
-
+// HTTP GET: host:port/entity/user.payments/{entityId}
 @Slf4j
-@Path("/gamificationAndPersonalisation")
-@Api("/gamificationAndPersonalisation")
+@Path("/entity")
+@Api("/entity")
 @Consumes(MediaType.APPLICATION_JSON)
 @Produces(MediaType.APPLICATION_JSON)
 public class RetrievalResource {
@@ -45,7 +48,7 @@ public class RetrievalResource {
 
     @GET
     @Timed
-    @Path("/entity/{entityId}/dimensionName/{dimensionName}")
+    @Path("/{entityId}/dimension/{dimensionName}")
     @ApiOperation("To fetch the response of the Dimension")
     @ApiResponses(value = {@ApiResponse(code = HttpStatus.SC_NO_CONTENT, message = "Dimension not exists for the given entity")})
     public Response getDimensionForEntity(@NotNull @PathParam("entityId") String entityId,
@@ -53,15 +56,15 @@ public class RetrievalResource {
         try {
             Optional<Dimension> dimension = retrievalService.getDimensionForEntity(dimensionName, entityId);
             return dimension.map(d -> Response.status(HttpStatus.SC_OK).entity(d).build())
-                    .orElseGet(() -> Response.status(HttpStatus.SC_NOT_FOUND).entity("Dimension Not found for the user - " + entityId).build());
+                    .orElseGet(() -> Response.status(HttpStatus.SC_NOT_FOUND).entity(new DimensionNotFoundResponse(entityId, dimensionName)).build());
         } catch (ServingLayerException e) {
-            return Response.status(e.getHttpStatus()).entity(e.getMessage()).build();
+            return Response.status(e.getHttpStatus()).entity(new ErrorResponse(e.getMessage())).build();
         }
     }
 
     @POST
     @Timed
-    @Path("/entity/{entityId}/dimensions")
+    @Path("/{entityId}/dimensions")
     @ApiOperation("To fetch the response of the Dimension list")
     @ApiResponses(value = {@ApiResponse(code = HttpStatus.SC_NO_CONTENT, message = "Dimension not exists for the given entity")})
     public Response getDimensionList(@NotNull @PathParam("entityId") String entityId,
@@ -69,12 +72,30 @@ public class RetrievalResource {
         try {
             Collection<Dimension> dimensions = retrievalService.getDimensionsListForEntity(entityId, dimensionsToFetch);
             if (CollectionUtils.isEmpty(dimensions)) {
-                return Response.status(HttpStatus.SC_NOT_FOUND).entity("Dimension not found for the user - " + entityId).build();
+                return Response.status(HttpStatus.SC_NOT_FOUND).entity(new DimensionNotFoundResponse(entityId, dimensionsToFetch)).build();
             } else {
                 return Response.status(HttpStatus.SC_OK).entity(dimensions).build();
             }
         } catch (ServingLayerException e) {
-            return Response.status(e.getHttpStatus()).entity(e.getMessage()).build();
+            return Response.status(e.getHttpStatus()).entity(new ErrorResponse(e.getMessage())).build();
+        }
+    }
+
+    @POST
+    @Timed
+    @Path("/dimension/{dimensionName}")
+    @ApiOperation("To fetch the response of the Dimension list")
+    @ApiResponses(value = {@ApiResponse(code = HttpStatus.SC_NO_CONTENT, message = "Dimension not exists for the given entity")})
+    public Response getDimensionForEntityList(@NotNull @PathParam("dimensionName") String dimensionName, Request request) {
+        try {
+            Collection<Dimension> dimensions = retrievalService.getDimensionForEntityList(dimensionName, request.getEntityIds());
+            if (CollectionUtils.isEmpty(dimensions)) {
+                return Response.status(HttpStatus.SC_NOT_FOUND).entity(new DimensionNotFoundResponse(request.getEntityIds(), dimensionName)).build();
+            } else {
+                return Response.status(HttpStatus.SC_OK).entity(dimensions).build();
+            }
+        } catch (ServingLayerException e) {
+            return Response.status(e.getHttpStatus()).entity(new ErrorResponse(e.getMessage())).build();
         }
     }
 

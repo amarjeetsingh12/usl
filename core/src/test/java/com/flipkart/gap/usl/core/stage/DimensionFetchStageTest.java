@@ -39,7 +39,7 @@ public class DimensionFetchStageTest {
 
     @Before
     public void setup() {
-        JmxReporterMetricRegistry.initialiseJmxMetricRegistry("flipkart");
+        JmxReporterMetricRegistry.initialiseJmxMetricRegistry();
     }
 
     @Test

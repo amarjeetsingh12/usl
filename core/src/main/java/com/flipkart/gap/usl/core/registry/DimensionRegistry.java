@@ -5,14 +5,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.flipkart.gap.usl.core.constant.Constants;
+import com.flipkart.gap.usl.core.helper.GroovyTranslator;
 import com.flipkart.gap.usl.core.helper.ObjectMapperFactory;
 import com.flipkart.gap.usl.core.metric.JmxReporterMetricRegistry;
 import com.flipkart.gap.usl.core.model.EntityDimensionCompositeKey;
 import com.flipkart.gap.usl.core.model.InternalEventMeta;
-import com.flipkart.gap.usl.core.model.dimension.Dimension;
-import com.flipkart.gap.usl.core.model.dimension.DimensionSpec;
-import com.flipkart.gap.usl.core.model.dimension.DimensionSpecs;
-import com.flipkart.gap.usl.core.model.dimension.EventSpecs;
+import com.flipkart.gap.usl.core.model.dimension.*;
 import com.flipkart.gap.usl.core.model.dimension.event.DimensionEvent;
 import com.flipkart.gap.usl.core.model.dimension.event.DimensionEventType;
 import com.flipkart.gap.usl.core.model.dimension.event.DimensionMergeEvent;
@@ -25,6 +23,7 @@ import com.flipkart.gap.usl.core.validator.SchemaValidator;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.google.inject.name.Named;
+import groovy.lang.GroovyShell;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -36,6 +35,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Stream;
 
+import static com.flipkart.gap.usl.core.constant.Constants.*;
+
 /**
  * Created by amarjeet.singh on 04/10/16.
  */
@@ -46,13 +47,13 @@ import java.util.stream.Stream;
 @Singleton
 public class DimensionRegistry {
     // sourceEventId to Active Mapping.
-    private Map<String, Set<EventMapping>> registeredEvents = new ConcurrentHashMap<>();
+    private final Map<String, Set<EventMapping>> registeredEvents = new ConcurrentHashMap<>();
     //map storing internal event to dimension specs
-    private Map<Class<? extends DimensionEvent>, Set<DimensionSpec>> registeredDimensions = new ConcurrentHashMap<>();
+    private final Map<Class<? extends DimensionEvent>, Set<DimensionSpec>> registeredDimensions = new ConcurrentHashMap<>();
     // map to store internal event name to internal event Class
-    private Map<String, Class<? extends DimensionEvent>> internalEventMap = new ConcurrentHashMap<>();
+    private final Map<String, Class<? extends DimensionEvent>> internalEventMap = new ConcurrentHashMap<>();
     // map to store dimensionName to Dimension Class
-    private Map<String, Class<? extends Dimension>> dimensionNameToClassMap = new ConcurrentHashMap<>();
+    private final Map<String, Class<? extends Dimension>> dimensionNameToClassMap = new ConcurrentHashMap<>();
     @Inject
     private EventMappingDBWrapper eventMappingDBWrapper;
     @Inject
@@ -158,11 +159,14 @@ public class DimensionRegistry {
 
                             // adding mapping for each update event class
                             for (Class<? extends DimensionUpdateEvent> dimensionUpdateEventClass : dimensionUpdateEventClassArray) {
-                                addDimensionEventClassMapping(dimensionUpdateEventClass, dimensionClass, dimensionName, DimensionEventType.UPDATE);
+                                if (!dimensionClass.isAssignableFrom(DummyUpdateEvent.class)) {
+                                    addDimensionEventClassMapping(dimensionUpdateEventClass, dimensionClass, dimensionName, DimensionEventType.UPDATE);
+                                }
                             }
-                            // adding mapping for login event class
-                            addDimensionEventClassMapping(dimensionMergeEventClass, dimensionClass, dimensionName, DimensionEventType.MERGE);
-
+                            // adding mapping for merge event class
+                            if (!dimensionClass.isAssignableFrom(DummyMergeEvent.class)) {
+                                addDimensionEventClassMapping(dimensionMergeEventClass, dimensionClass, dimensionName, DimensionEventType.MERGE);
+                            }
                             dimensionNameToClassMap.put(dimensionName, dimensionClass);
                         }
                     } else {
@@ -185,7 +189,7 @@ public class DimensionRegistry {
      */
     private void addDimensionEventClassMapping(Class<? extends DimensionEvent> dimensionEventClass, Class<? extends Dimension> dimensionClass, String dimensionName, DimensionEventType eventType) {
         Set<DimensionSpec> dimensionSpecSet = registeredDimensions.computeIfAbsent(dimensionEventClass, k -> new HashSet<>());
-        dimensionSpecSet.add(new DimensionSpec(dimensionClass, dimensionName, Constants.DIMENSION_VERSION));
+        dimensionSpecSet.add(new DimensionSpec(dimensionClass, dimensionName, DIMENSION_VERSION));
         EventSpecs eventSpecs = dimensionEventClass.getAnnotation(EventSpecs.class);
         internalEventMap.put(eventSpecs.name(), dimensionEventClass);
     }
@@ -239,16 +243,12 @@ public class DimensionRegistry {
         /*
             EntityId should be kept separately, not in the mapping.
          */
-        for (String path : eventMapping.getEntityIdPaths()) {
-            JsonNode entityId = data.at(path);
-            if (!entityId.isNull() && !entityId.toString().isEmpty()) {
-                dataNode.set("entityId", entityId);
-                break;
-            }
-        }
-        Class derivedClass = this.internalEventMap.get(eventMapping.getEventType());
+
+        dataNode.set(ENTITY_ID, getEntityId(eventMapping, data));
+
+        Class<? extends DimensionEvent> derivedClass = this.internalEventMap.get(eventMapping.getEventType());
         if (DimensionEvent.class.isAssignableFrom(derivedClass)) {
-            DimensionEvent dimensionEvent = (DimensionEvent) mapper.convertValue(dataNode, derivedClass);
+            DimensionEvent dimensionEvent = mapper.convertValue(dataNode, derivedClass);
             if (StringUtils.isBlank(dimensionEvent.getEntityId())) {
                 String dimensionEventJSON = "";
                 try {
@@ -265,5 +265,32 @@ public class DimensionRegistry {
             JmxReporterMetricRegistry.getInstance().markNotDimensionEvent(eventMapping.getSourceEventId(), eventMapping.getEventType());
             throw new IngestionEventMappingException("Event should be of type " + DimensionEvent.class);
         }
+    }
+
+    private JsonNode getEntityId(EventMapping eventMapping, ObjectNode data) throws IngestionEventMappingException{
+        if (eventMapping.getEntityIdPaths() != null) {
+            return getEntityIdFromXPath(data, eventMapping.getEntityIdPaths());
+        }
+        Optional.ofNullable(eventMapping.getPivot()).orElseThrow(() ->
+                new IngestionEventMappingException("EntityId is missing from Dimension Event {}" + data));
+        return eventMapping.getPivot().getType().equals(XPATH) ? getEntityIdFromXPath(data, eventMapping.getPivot().getValue()) :
+                getEntityIdFromGroovy(eventMapping.getPivot().getExpression(), data);
+    }
+
+    private JsonNode getEntityIdFromGroovy(String script, ObjectNode data) {
+        String entityId = GroovyTranslator.translate(script, data).toString();
+        ObjectMapper mapper = ObjectMapperFactory.getMapper();
+        data.set("entityIdFromGroovy", mapper.convertValue(entityId, JsonNode.class));
+        return data.at("/entityIdFromGroovy");
+    }
+
+    private JsonNode getEntityIdFromXPath(ObjectNode data, List<String> paths) {
+        for (String path : paths) {
+            JsonNode entityId = data.at(path);
+            if (!entityId.isNull() && !entityId.toString().isEmpty()) {
+                return entityId;
+            }
+        }
+        return null;
     }
 }
