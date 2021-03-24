@@ -1,4 +1,4 @@
-package com.flipkart.gap.usl.core.client;
+package com.flipkart.gap.usl.core.manager;
 
 import com.flipkart.gap.usl.core.config.EventProcessorConfig;
 import com.flipkart.gap.usl.core.constant.Constants;
@@ -27,12 +27,14 @@ import java.util.stream.Collectors;
 @Singleton
 public class OffsetManager {
     private ZooKeeper zooKeeper = null;
+
     @Inject
-    private KafkaClient kafkaClient;
+    private PartitionManager partitionManager;
+
     @Inject
     @Named("eventProcessorConfig")
     private EventProcessorConfig eventProcessorConfig;
-    private Map<Integer, Long> offsetMap;
+    private Map<String, Map<Integer, Long>> offsetMap = new HashMap<>();
     private ExecutorService executorService;
     private static final int MAX_OFFSET_RETRY = 3;
 
@@ -117,31 +119,39 @@ public class OffsetManager {
         }
     }
 
-    public Map<TopicPartition, Long> getTopicPartition() throws Exception {
+    public Map<TopicPartition, Long> getTopicPartitionOffsets(List<String> topicNames) throws Exception {
         reconnectZKIfRequired();
-        String topicName = eventProcessorConfig.getTopicName();
-        int partitionCount = kafkaClient.getPartitionCount();
+
         Map<TopicPartition, Long> topicPartitionMap = new HashMap<>();
-        for (int partition = 0; partition < partitionCount; partition++) {
-            Stat partitionStat = this.zooKeeper.exists(getPartitionPath(partition, topicName), false);
-            if (partitionStat == null) {
-                Long defaultOffset = getEarliestOffset(partition);
-                topicPartitionMap.put(new TopicPartition(topicName, partition), defaultOffset);
-                log.info("Zookeeper partition stat not found sending earliest {},{},{}", topicName, partition, defaultOffset);
-            } else {
-                long offsetFound = Long.parseLong(new String(this.zooKeeper.getData(getPartitionPath(partition, topicName), false, partitionStat)));
-                topicPartitionMap.put(new TopicPartition(topicName, partition), offsetFound);
-                log.info("Zookeeper partition stat found sending existing {},{},{}", topicName, partition, offsetFound);
+
+        for (String topicName: topicNames) {
+            int partitionCount = partitionManager.getPartitionCount(topicName);
+
+            for (int partition = 0; partition < partitionCount; partition++) {
+                Stat partitionStat = this.zooKeeper.exists(getPartitionPath(partition, topicName), false);
+                if (partitionStat == null) {
+                    Long defaultOffset = getEarliestOffset(topicName, partition);
+                    topicPartitionMap.put(new TopicPartition(topicName, partition), defaultOffset);
+                    log.info("Zookeeper partition stat not found sending earliest {},{},{}", topicName, partition, defaultOffset);
+                } else {
+                    long offsetFound = Long.parseLong(new String(this.zooKeeper.getData(getPartitionPath(partition, topicName), false, partitionStat)));
+                    topicPartitionMap.put(new TopicPartition(topicName, partition), offsetFound);
+                    log.info("Zookeeper partition stat found sending existing {},{},{}", topicName, partition, offsetFound);
+                }
             }
+
         }
+
         return topicPartitionMap;
     }
 
-    private Long getEarliestOffset(int partition) throws Exception {
-        if (offsetMap == null) {
-            offsetMap = kafkaClient.getPartitionOffsets();
+    private Long getEarliestOffset(String topicName, int partition) {
+        if (offsetMap.get(topicName) == null) {
+            Map<Integer, Long> earliestOffsets = partitionManager.getEarliestOffsets(topicName);
+            offsetMap.put(topicName, earliestOffsets);
         }
-        return offsetMap.get(partition);
+
+        return offsetMap.get(topicName).get(partition);
     }
 
     private static String getTopicPath(final String topicName) {
