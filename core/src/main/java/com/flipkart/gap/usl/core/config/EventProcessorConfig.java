@@ -39,7 +39,7 @@ public class EventProcessorConfig implements Serializable {
     private String executorExtraJavaOpts = "";
     private String executorMemory = "1g";
     private int executorCores = 1;
-    private int executorInstances = 4;
+    private int executorInstances = 2;
     private int maxCores = 8;
     private String blockInterval = "500ms";
     private String environment;
