@@ -72,6 +72,8 @@ public class ExternalKafkaPublisher implements Serializable {
         sparkConf.set("spark.executor.extraJavaOptions", eventProcessorConfig.getExecutorExtraJavaOpts());
         sparkConf.set("spark.executor.cores", eventProcessorConfig.getExecutorCores() + "");
         sparkConf.set("spark.executor.memory", eventProcessorConfig.getExecutorMemory());
+        sparkConf.set("spark.executor.instances", eventProcessorConfig.getExecutorInstances() + "");
+        sparkConf.set("spark.cores.max", eventProcessorConfig.getMaxCores() + "");
         sparkConf.set("spark.job.interruptOnCancel", "true");
         int maxRate = eventProcessorConfig.getBatchSize();
         log.info("fetching partition count configs");
