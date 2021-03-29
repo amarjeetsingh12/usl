@@ -4,6 +4,7 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.util.ContextInitializer;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.flipkart.gap.usl.container.config.ContainerConfig;
 import com.flipkart.gap.usl.container.config.ContainerConfigurationModule;
 import com.flipkart.gap.usl.container.config.USLBootstrapConfig;
 import com.flipkart.gap.usl.container.filters.RequestFilter;
@@ -17,6 +18,7 @@ import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import io.federecio.dropwizard.swagger.SwaggerBundle;
 import io.federecio.dropwizard.swagger.SwaggerBundleConfiguration;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 
@@ -25,13 +27,19 @@ import org.slf4j.LoggerFactory;
  */
 @Slf4j
 public class USLContainer extends Application<USLBootstrapConfig> {
+    @Getter
+    private final ContainerConfig containerConfig;
+
+    public USLContainer(ContainerConfig containerConfig) {
+        this.containerConfig = containerConfig;
+    }
 
     @Override
     public void initialize(Bootstrap<USLBootstrapConfig> bootstrap) {
         bootstrap.addBundle(new SwaggerBundle<USLBootstrapConfig>() {
             @Override
             protected SwaggerBundleConfiguration getSwaggerBundleConfiguration(USLBootstrapConfig configuration) {
-                return configuration.swaggerBundleConfiguration;
+                return containerConfig.getSwaggerBundleConfiguration();
             }
         });
     }
@@ -42,8 +50,8 @@ public class USLContainer extends Application<USLBootstrapConfig> {
         context.reset();
         ContextInitializer initializer = new ContextInitializer(context);
         initializer.autoConfig();
-        Injector injector = Guice.createInjector(new ConfigurationModule(uslBootstrapConfig.getCoreConfig()),
-                new ContainerConfigurationModule(uslBootstrapConfig));
+        Injector injector = Guice.createInjector(new ConfigurationModule(containerConfig.getCoreConfig()),
+                new ContainerConfigurationModule(containerConfig));
         environment.getObjectMapper().enable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         environment.getObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         JmxReporterMetricRegistry.initialiseJmxMetricRegistry();
