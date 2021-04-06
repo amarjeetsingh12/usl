@@ -13,7 +13,9 @@ import org.apache.http.HttpStatus;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.validation.constraints.NotNull;
 import javax.ws.rs.Consumes;
@@ -68,13 +70,14 @@ public class RetrievalResource {
     @ApiOperation("To fetch the response of the Dimension list")
     @ApiResponses(value = {@ApiResponse(code = HttpStatus.SC_NO_CONTENT, message = "Dimension not exists for the given entity")})
     public Response getDimensionList(@NotNull @PathParam("entityId") String entityId,
-                                     @NotNull List<String> dimensionsToFetch) {
+                                     Request request) {
         try {
-            Collection<Dimension> dimensions = retrievalService.getDimensionsListForEntity(entityId, dimensionsToFetch);
+            Collection<Dimension> dimensions = retrievalService.getDimensionsListForEntity(entityId, request.getDimensionNames());
             if (CollectionUtils.isEmpty(dimensions)) {
-                return Response.status(HttpStatus.SC_NOT_FOUND).entity(new DimensionNotFoundResponse(entityId, dimensionsToFetch)).build();
+                return Response.status(HttpStatus.SC_NOT_FOUND).entity(new DimensionNotFoundResponse(entityId, request.getDimensionNames())).build();
             } else {
-                return Response.status(HttpStatus.SC_OK).entity(dimensions).build();
+                Map<String, Dimension> dimensionMap = dimensions.stream().collect(Collectors.toMap(d -> d.getDimensionSpecs().name(), d -> d));
+                return Response.status(HttpStatus.SC_OK).entity(dimensionMap).build();
             }
         } catch (ServingLayerException e) {
             return Response.status(e.getHttpStatus()).entity(new ErrorResponse(e.getMessage())).build();

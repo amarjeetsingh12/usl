@@ -50,6 +50,7 @@ public class Constants {
 
     public static final class Stream {
         public static final String GROUP_ID = "usl-event-processor";
+        public static final String EXTERNAL_KAFKA_PUBLISHER_GROUP_ID = "external-kafka-publisher";
         public static final int GROUP_KEY_PARTITION_COUNT = 100;
     }
 
