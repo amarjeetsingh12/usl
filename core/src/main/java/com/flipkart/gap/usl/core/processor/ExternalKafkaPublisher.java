@@ -64,7 +64,7 @@ public class ExternalKafkaPublisher implements Serializable {
     @Inject
     public void init() {
         log.info("Initialising configs");
-        sparkConf = new SparkConf().setMaster(eventProcessorConfig.getSparkMasterWithPort()).setAppName(Constants.Stream.GROUP_ID);
+        sparkConf = new SparkConf().setMaster(eventProcessorConfig.getSparkMasterWithPort()).setAppName(Constants.Stream.EXTERNAL_KAFKA_PUBLISHER_GROUP_ID);
         sparkConf.set("spark.streaming.backpressure.initialRate", eventProcessorConfig.getBackPressureInitialRate());
         sparkConf.set("spark.dynamicAllocation.enabled", "false");
         sparkConf.set("spark.streaming.receiver.maxRate", eventProcessorConfig.getBatchSize() + "");
