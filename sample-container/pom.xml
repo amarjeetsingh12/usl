@@ -18,7 +18,7 @@
         <dependency>
             <groupId>com.flipkart.usl</groupId>
             <artifactId>sample-processor</artifactId>
-            <version>0.0.1-SNAPSHOT-NS</version>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

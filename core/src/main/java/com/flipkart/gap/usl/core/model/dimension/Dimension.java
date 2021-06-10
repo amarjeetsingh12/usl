@@ -35,6 +35,7 @@ public abstract class Dimension<DE extends DimensionUpdateEvent, ME extends Dime
     }
 
     public final void processUpdate(List<DE> dimensionUpdateEvents) throws DimensionUpdateException {
+        this.updated = System.currentTimeMillis();
         this.update(dimensionUpdateEvents);
         this.expire();
     }

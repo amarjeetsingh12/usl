@@ -1,0 +1,3 @@
+version 0.0.12
+    1. Added dimension name in bulk dimension API
+    2. Spark app name change for external kafka publisher job
