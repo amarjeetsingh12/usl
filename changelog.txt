@@ -1,3 +1,7 @@
+version 0.0.13
+    1. Kafka client upgraded to 2.3.1
+    2. Added JMX metrics over Bulk get hbase operation
+
 version 0.0.12
     1. Added dimension name in bulk dimension API
     2. Spark app name change for external kafka publisher job
