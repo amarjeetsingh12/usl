@@ -49,6 +49,7 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
     private static final String GET_BULK_DIMENSION_TIMER = "getBulkDimensions";
     private static final String PUT_BULK_DIMENSION_TIMER = "putBulkDimensions";
     private static final String DELETE_DIMENSION_TIMER = "deletedDimension";
+    private static final String GET_BULK_HBASE_DIMENSION_TIMER = "getBulkHBaseDimensions";
     public static final String DIMENSION_READ_SERVICE = "dimensionReadConfig";
     public static final String DIMENSION_BULK_READ_SERVICE = "dimensionBulkReadConfig";
     public static final String DIMENSION_BULK_SAVE_SERVICE = "dimensionBulkSaveConfig";
@@ -127,17 +128,19 @@ public class HBaseDimensionStoreDAO implements DimensionStoreDAO {
         }
         try (Timer.Context context = JmxReporterMetricRegistry.getMetricRegistry().timer(GET_BULK_DIMENSION_TIMER).time()) {
             return resilenceDecorator.execute(DIMENSION_BULK_READ_SERVICE, () -> {
-                try (Table table = getTable()) {
-                    Result[] results = table.get(getOps);
-                    for (Result result : results) {
-                        if (!result.isEmpty()) {
-                            byte[] row = result.getRow();
-                            DimensionDBRequest dimensionDBRequest = rowKeyMap.get(new String(row));
-                            responseMap.put(dimensionDBRequest, readResult(result, dimensionDBRequest));
+                try (Timer.Context ignored = JmxReporterMetricRegistry.getMetricRegistry().timer(GET_BULK_HBASE_DIMENSION_TIMER).time()) {
+                    try (Table table = getTable()) {
+                        Result[] results = table.get(getOps);
+                        for (Result result : results) {
+                            if (!result.isEmpty()) {
+                                byte[] row = result.getRow();
+                                DimensionDBRequest dimensionDBRequest = rowKeyMap.get(new String(row));
+                                responseMap.put(dimensionDBRequest, readResult(result, dimensionDBRequest));
+                            }
                         }
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
                     }
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
                 }
                 return responseMap;
             });
